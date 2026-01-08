@@ -15,7 +15,7 @@
     "@supabase/supabase-js": "^2.90.1",
     "bootstrap": "^5.3.6",
     "framer-motion": "^12.11.4",
-    "next": "15.3.2",
+    "next": "15.3.8",
     "react": "^19.0.0",
     "react-anchor-link-smooth-scroll": "^1.0.12",
     "react-awesome-reveal": "^4.3.1",
