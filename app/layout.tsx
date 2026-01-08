@@ -8,6 +8,8 @@ import "../styles/animate.css";
 import "../styles/cursor.css";
 import "../styles/custom-font.css";
 import "../styles/main.css";
+import "../styles/ecommerce.css";
+import { CartProvider } from "../contexts/CartContext";
 
 export const metadata: Metadata = {
   title: "Innomax - Technology & IT Startup Next Js Template",
@@ -30,7 +32,9 @@ export default function RootLayout({
         />
       </head>
       <body id='scrool'>
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );

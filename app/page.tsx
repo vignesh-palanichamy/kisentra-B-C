@@ -4,6 +4,7 @@ import Hero from '../components/hero/hero';
 import PartnerSection from '../components/PartnerSection';
 import About from '../components/about/about';
 import ServiceSection from '../components/ServiceSection/ServiceSection';
+import FeaturedProducts from '../components/FeaturedProducts/FeaturedProducts';
 import ProjectSection from '../components/ProjectSection/ProjectSection';
 import WorkProcess from '../components/WorkProcess/WorkProcess';
 import IndustrieSection from '../components/IndustrieSection/IndustrieSection';
@@ -27,6 +28,7 @@ const HomePage = () => {
                     <PartnerSection />
                     <About />
                     <ServiceSection />
+                    <FeaturedProducts />
                     <ProjectSection />
                     <WorkProcess />
                     <IndustrieSection />

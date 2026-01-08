@@ -7,10 +7,12 @@ import Image from 'next/image';
 import MobileMenu from '../MobileMenu/MobileMenu';
 import MegaMenu1 from './MegaMenu1';
 import MegaMenu2 from './MegaMenu2';
+import { useCart } from '@/contexts/CartContext';
 
 const Header: React.FC = () => {
   const [mobailActive, setMobailState] = useState(false);
   const [isSticky, setSticky] = useState(false);
+  const { getTotalItems } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,43 +62,13 @@ const Header: React.FC = () => {
             <div className="main-menu__wrap ul_li navbar navbar-expand-xl">
               <nav className="main-menu collapse navbar-collapse">
                 <ul>
-                  <li className="menu-item-has-children">
-                    <Link href="/">
-                      <span>Home</span>
-                    </Link>
-                    <ul className="submenu">
-                      <li><Link href="/"><span>SEO Agency</span></Link></li>
-                      <li><Link href="/home-2"><span>It Services</span></Link></li>
-                      <li><Link href="/home-3"><span>AI & Data Solutions</span></Link></li>
-                      <li><Link href="/home-4"><span>Cyber Security</span></Link></li>
-                      <li><Link href="/home-5"><span>Cloud and Devops</span></Link></li>
-                      <li><Link href="/home-6"><span>Help desk SaaS</span></Link></li>
-                    </ul>
-                  </li>
-
-                  <li className="menu-item-has-children megamenu">
-                    <Link href="/"><span>Company</span></Link>
-                    <MegaMenu1 />
-                  </li>
-
-                  <li className="menu-item-has-children megamenu">
-                    <Link href="/service"><span>Services</span></Link>
-                    <MegaMenu2 />
-                  </li>
+                  <li><Link href="/"><span>Home</span></Link></li>
 
                   <li className="menu-item-has-children">
-                    <Link href="/casestudy"><span>Casestudy</span></Link>
+                    <Link href="/products"><span>Shop</span></Link>
                     <ul className="submenu">
-                      <li><Link href="/casestudy"><span>Casestudy</span></Link></li>
-                      <li><Link href="/casestudy-details"><span>Casestudy Details</span></Link></li>
-                    </ul>
-                  </li>
-
-                  <li className="menu-item-has-children">
-                    <Link href="/blog"><span>Blog</span></Link>
-                    <ul className="submenu">
-                      <li><Link href="/blog"><span>Blog</span></Link></li>
-                      <li><Link href="/blog-single"><span>Blog Details</span></Link></li>
+                      <li><Link href="/products"><span>All Products</span></Link></li>
+                      <li><Link href="/cart"><span>Shopping Cart</span></Link></li>
                     </ul>
                   </li>
 
@@ -131,17 +103,77 @@ const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile toggle button */}
-            <div className="header-bar-mobile side-menu d-xl-none">
+            {/* Mobile toggle button & Cart */}
+            <div className="header-bar-mobile side-menu d-xl-none ul_li" style={{ gap: '15px', alignItems: 'center' }}>
+              <Link href="/cart" className="cart-icon" style={{
+                position: 'relative',
+                padding: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                color: 'var(--color-heading)'
+              }}>
+                <i className="fas fa-shopping-cart" style={{ fontSize: '20px' }}></i>
+                {getTotalItems() > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '0',
+                    right: '0',
+                    backgroundColor: 'var(--color-primary-two)',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Link>
               <button className="xb-nav-mobile" onClick={() => setMobailState(!mobailActive)}>
                 <i className="far fa-bars" />
               </button>
             </div>
 
-            {/* CTA */}
-            <div className="header-contact d-none d-md-block">
+            {/* Cart & CTA */}
+            <div className="header-contact d-none d-md-flex ul_li" style={{ gap: '15px', alignItems: 'center' }}>
+              <Link href="/cart" className="cart-icon" style={{
+                position: 'relative',
+                padding: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                color: 'var(--color-heading)'
+              }}>
+                <i className="fas fa-shopping-cart" style={{ fontSize: '20px' }}></i>
+                {getTotalItems() > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '0',
+                    right: '0',
+                    backgroundColor: 'var(--color-primary-two)',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Link>
               <Link href="/contact" className="thm-btn thm-btn--aso thm-btn--header-black">
-                Let’s talk
+                Let's talk
                 <Image src="/images/icon/sms-white-icon01.svg" alt="Message Icon" width={20} height={20} />
               </Link>
             </div>

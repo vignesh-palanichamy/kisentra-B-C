@@ -1,0 +1,143 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { AdminProvider, useAdmin } from '@/contexts/AdminContext';
+import Link from 'next/link';
+
+const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, logout } = useAdmin();
+
+  useEffect(() => {
+    // Allow access to login page without authentication
+    if (pathname !== '/admin/login' && !isAuthenticated) {
+      router.push('/admin/login');
+    }
+  }, [isAuthenticated, pathname, router]);
+
+  // Don't show layout on login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f6f8' }}>
+      {/* Admin Header */}
+      <header style={{
+        backgroundColor: '#fff',
+        borderBottom: '1px solid #e7e8ec',
+        padding: '15px 0',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)'
+      }}>
+        <div className="container">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: 'var(--color-heading)',
+                margin: 0
+              }}>
+                Admin Panel
+              </h1>
+            </div>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <Link
+                href="/"
+                style={{
+                  color: 'var(--color-default)',
+                  textDecoration: 'none',
+                  fontSize: '14px'
+                }}
+              >
+                View Store
+              </Link>
+              <button
+                onClick={logout}
+                className="thm-btn thm-btn--border"
+                style={{ padding: '10px 20px', fontSize: '14px' }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div style={{ display: 'flex' }}>
+        {/* Admin Sidebar */}
+        <aside style={{
+          width: '250px',
+          backgroundColor: '#fff',
+          borderRight: '1px solid #e7e8ec',
+          minHeight: 'calc(100vh - 60px)',
+          padding: '20px 0'
+        }}>
+          <nav>
+            <Link
+              href="/admin/dashboard"
+              style={{
+                display: 'block',
+                padding: '12px 30px',
+                color: pathname === '/admin/dashboard' ? 'var(--color-primary-two)' : 'var(--color-heading)',
+                textDecoration: 'none',
+                fontWeight: pathname === '/admin/dashboard' ? '600' : '400',
+                backgroundColor: pathname === '/admin/dashboard' ? '#f6f6f8' : 'transparent',
+                borderLeft: pathname === '/admin/dashboard' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
+              }}
+            >
+              <i className="fas fa-chart-line" style={{ marginRight: '10px' }}></i>
+              Dashboard
+            </Link>
+            <Link
+              href="/admin/products"
+              style={{
+                display: 'block',
+                padding: '12px 30px',
+                color: pathname === '/admin/products' ? 'var(--color-primary-two)' : 'var(--color-heading)',
+                textDecoration: 'none',
+                fontWeight: pathname === '/admin/products' ? '600' : '400',
+                backgroundColor: pathname === '/admin/products' ? '#f6f6f8' : 'transparent',
+                borderLeft: pathname === '/admin/products' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
+              }}
+            >
+              <i className="fas fa-box" style={{ marginRight: '10px' }}></i>
+              Products
+            </Link>
+          </nav>
+        </aside>
+
+        {/* Admin Content */}
+        <main style={{ flex: 1, padding: '30px' }}>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AdminProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminProvider>
+  );
+}
+
