@@ -4,14 +4,29 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Fade } from 'react-awesome-reveal';
-import { getProducts } from '@/api/products';
+import { getProducts, getProductsFromSupabaseAsync, Product } from '@/api/products';
 import ProductCard from '../ProductCard/ProductCard';
 import hIcon from '@/public/images/icon/ser-01.svg';
 
 const FeaturedProducts: React.FC = () => {
-  const [products, setProducts] = useState(getProducts());
+  // Start with empty array to avoid hydration mismatch
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
+    // Only load products on client side after hydration
+    setIsMounted(true);
+    setProducts(getProducts());
+    
+    // Also try to load from Supabase in background
+    getProductsFromSupabaseAsync().then((supabaseProducts) => {
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        setProducts(supabaseProducts);
+        // Also update localStorage with Supabase data
+        localStorage.setItem('adminProducts', JSON.stringify(supabaseProducts));
+      }
+    });
+    
     const handleStorageChange = () => {
       setProducts(getProducts());
     };
@@ -23,8 +38,10 @@ const FeaturedProducts: React.FC = () => {
     };
   }, []);
 
-  // Filter visible products only
-  const featuredProducts = products.filter(p => p.visible !== false).slice(0, 6);
+  // Filter visible products only - only render after mount to avoid hydration mismatch
+  const featuredProducts = isMounted 
+    ? products.filter(p => p.visible !== false).slice(0, 6)
+    : [];
 
   return (
     <section className="service pt-140 pb-140">

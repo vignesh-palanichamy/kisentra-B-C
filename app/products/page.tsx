@@ -1,25 +1,37 @@
 'use client';
 
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useEffect } from 'react';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
-import { getProducts } from '@/api/products';
+import { getProducts, getProductsFromSupabaseAsync, Product } from '@/api/products';
 import ProductCard from '@/components/ProductCard/ProductCard';
 import { Fade } from 'react-awesome-reveal';
 
 const ProductsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [products, setProducts] = useState(getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Update products when localStorage changes
-  React.useEffect(() => {
+  // Load products only on client side to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+    setProducts(getProducts());
+    
+    // Also try to load from Supabase in background
+    getProductsFromSupabaseAsync().then((supabaseProducts) => {
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        setProducts(supabaseProducts);
+        // Also update localStorage with Supabase data
+        localStorage.setItem('adminProducts', JSON.stringify(supabaseProducts));
+      }
+    });
+    
     const handleStorageChange = () => {
       setProducts(getProducts());
     };
     window.addEventListener('storage', handleStorageChange);
-    // Also check on focus (for same-tab updates)
     window.addEventListener('focus', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -27,12 +39,16 @@ const ProductsPage: React.FC = () => {
     };
   }, []);
 
-  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = isMounted 
+    ? ['All', ...Array.from(new Set(products.map(p => p.category)))]
+    : ['All'];
   
-  // Filter visible products only
-  const filteredProducts = products.filter(
-    product => (selectedCategory === 'All' || product.category === selectedCategory) && product.visible !== false
-  );
+  // Filter visible products only - only after mount
+  const filteredProducts = isMounted
+    ? products.filter(
+        product => (selectedCategory === 'All' || product.category === selectedCategory) && product.visible !== false
+      )
+    : [];
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortBy) {

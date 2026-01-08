@@ -14,9 +14,27 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
   const [addedToCart, setAddedToCart] = useState(false);
-  const mainImage = typeof product.images[0] === 'string' 
-    ? product.images[0] 
-    : product.images[0].src || product.images[0];
+  
+  // Safely get the main image with fallback
+  const getMainImage = () => {
+    if (!product.images || product.images.length === 0) {
+      return '/images/placeholder.jpg'; // Fallback placeholder
+    }
+    
+    const firstImage = product.images[0];
+    if (typeof firstImage === 'string') {
+      return firstImage;
+    }
+    
+    // Handle StaticImageData or object with src property
+    if (firstImage && typeof firstImage === 'object') {
+      return (firstImage as any).src || firstImage;
+    }
+    
+    return '/images/placeholder.jpg'; // Final fallback
+  };
+  
+  const mainImage = getMainImage();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();

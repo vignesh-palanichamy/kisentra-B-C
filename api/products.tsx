@@ -26,7 +26,8 @@ export interface Product {
   visible?: boolean // For admin to enable/disable products
 }
 
-// Function to get products from localStorage or fallback to default
+// Synchronous version for client-side (to avoid hydration issues)
+// This is used for initial render to prevent hydration mismatch
 export const getProducts = (): Product[] => {
   if (typeof window !== 'undefined') {
     const savedProducts = localStorage.getItem('adminProducts');
@@ -41,10 +42,43 @@ export const getProducts = (): Product[] => {
   return Products;
 };
 
-// Function to save products to localStorage
-export const saveProducts = (products: Product[]): void => {
+// Async version to load from Supabase (called after mount)
+export const getProductsFromSupabaseAsync = async (): Promise<Product[] | null> => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const { isSupabaseConfigured } = await import('@/lib/supabase');
+    if (isSupabaseConfigured()) {
+      const { getProductsFromSupabase } = await import('./products-supabase');
+      return await getProductsFromSupabase();
+    }
+  } catch (error) {
+    console.error('Error loading from Supabase:', error);
+  }
+  return null;
+};
+
+// Function to save products to Supabase or localStorage
+export const saveProducts = async (products: Product[]): Promise<void> => {
   if (typeof window !== 'undefined') {
+    // Always save to localStorage as backup
     localStorage.setItem('adminProducts', JSON.stringify(products));
+
+    // Try to sync to Supabase if configured (in background, don't block)
+    getProductsFromSupabaseAsync().then(() => {
+      // Supabase is available, sync products
+      import('./products-supabase').then(({ saveProductToSupabase }) => {
+        products.forEach(product => {
+          saveProductToSupabase(product).catch(err => {
+            console.error('Error syncing product to Supabase:', err);
+          });
+        });
+      }).catch(() => {
+        // Supabase not available, continue with localStorage only
+      });
+    }).catch(() => {
+      // Supabase not configured, continue with localStorage only
+    });
   }
 };
 

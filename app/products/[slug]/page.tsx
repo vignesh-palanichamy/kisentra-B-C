@@ -5,7 +5,7 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
-import { getProducts } from '@/api/products';
+import { getProducts, getProductsFromSupabaseAsync, Product } from '@/api/products';
 import { useCart } from '@/contexts/CartContext';
 import ProductCard from '@/components/ProductCard/ProductCard';
 import Image from 'next/image';
@@ -16,11 +16,23 @@ const ProductDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
-  const [products, setProducts] = useState(getProducts());
-  const product = products.find((p) => p.slug === slug);
-
-  // Update products when localStorage changes
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Load products only on client side to avoid hydration mismatch
   useEffect(() => {
+    setIsMounted(true);
+    setProducts(getProducts());
+    
+    // Also try to load from Supabase in background
+    getProductsFromSupabaseAsync().then((supabaseProducts) => {
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        setProducts(supabaseProducts);
+        // Also update localStorage with Supabase data
+        localStorage.setItem('adminProducts', JSON.stringify(supabaseProducts));
+      }
+    });
+    
     const handleStorageChange = () => {
       setProducts(getProducts());
     };
@@ -31,10 +43,35 @@ const ProductDetailPage: React.FC = () => {
       window.removeEventListener('focus', handleStorageChange);
     };
   }, []);
+
+  const product = isMounted ? products.find((p) => p.slug === slug) : null;
   const { addToCart } = useCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+
+  if (!isMounted) {
+    return (
+      <Fragment>
+        <div className='body_wrap sco_agency'>
+          <Header />
+          <main className="page_content">
+            <section className="service pt-140 pb-140">
+              <div className="container">
+                <div className="row">
+                  <div className="col-12 text-center">
+                    <p className="content">Loading...</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+          <Footer />
+          <Scrollbar />
+        </div>
+      </Fragment>
+    );
+  }
 
   if (!product) {
     notFound();
@@ -45,9 +82,26 @@ const ProductDetailPage: React.FC = () => {
     (p) => p.category === product.category && p.Id !== product.Id && p.visible !== false
   ).slice(0, 4);
 
-  const mainImage = typeof product.images[selectedImageIndex] === 'string'
-    ? product.images[selectedImageIndex]
-    : product.images[selectedImageIndex].src || product.images[selectedImageIndex];
+  // Safely get the main image with fallback
+  const getMainImage = () => {
+    if (!product.images || product.images.length === 0) {
+      return '/images/placeholder.jpg'; // Fallback placeholder
+    }
+    
+    const selectedImage = product.images[selectedImageIndex] || product.images[0];
+    if (typeof selectedImage === 'string') {
+      return selectedImage;
+    }
+    
+    // Handle StaticImageData or object with src property
+    if (selectedImage && typeof selectedImage === 'object') {
+      return (selectedImage as any).src || selectedImage;
+    }
+    
+    return '/images/placeholder.jpg'; // Final fallback
+  };
+  
+  const mainImage = getMainImage();
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -117,14 +171,16 @@ const ProductDetailPage: React.FC = () => {
                         />
                       </div>
                       
-                      {product.images.length > 1 && (
+                      {product.images && product.images.length > 1 && (
                         <div className="product-thumbnails" style={{
                           display: 'flex',
                           gap: '15px',
                           flexWrap: 'wrap'
                         }}>
                           {product.images.map((img, index) => {
-                            const thumbSrc = typeof img === 'string' ? img : img.src || img;
+                            const thumbSrc = typeof img === 'string' 
+                              ? img 
+                              : (img && typeof img === 'object' ? (img as any).src : '/images/placeholder.jpg') || '/images/placeholder.jpg';
                             return (
                               <div
                                 key={index}
