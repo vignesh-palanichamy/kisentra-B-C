@@ -17,6 +17,7 @@ const Header: React.FC = () => {
   const [mobailActive, setMobailState] = useState(false);
   const [isSticky, setSticky] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { getTotalItems } = useCart();
 
   useEffect(() => {
@@ -65,11 +66,54 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showUserMenu && !target.closest('.user-menu-wrapper')) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
+
   const SubmitHandler = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
   };
 
   return (
+    <>
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-link {
+          position: relative;
+          transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+          color: var(--color-primary-two) !important;
+        }
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background-color: var(--color-primary-two);
+          transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+          width: 100%;
+        }
+      `}</style>
     <div id="xb-header-area" className="header-area header-style-two header-transparent">
       {/* Top bar */}
       <div className="header-top">
@@ -105,17 +149,28 @@ const Header: React.FC = () => {
             <div className="main-menu__wrap ul_li navbar navbar-expand-xl">
               <nav className="main-menu collapse navbar-collapse">
                 <ul>
-                  <li><Link href="/"><span>Home</span></Link></li>
+                  <li>
+                    <Link href="/" className="nav-link">
+                      <span>Home</span>
+                    </Link>
+                  </li>
 
                   <li className="menu-item-has-children">
-                    <Link href="/products"><span>Shop</span></Link>
+                    <Link href="/products" className="nav-link">
+                      <span>Shop</span>
+                      <i className="far fa-angle-down" style={{ marginLeft: '5px', fontSize: '12px' }}></i>
+                    </Link>
                     <ul className="submenu">
                       <li><Link href="/products"><span>All Products</span></Link></li>
                       <li><Link href="/cart"><span>Shopping Cart</span></Link></li>
                     </ul>
                   </li>
 
-                  <li><Link href="/contact"><span>Contact</span></Link></li>
+                  <li>
+                    <Link href="/contact" className="nav-link">
+                      <span>Contact</span>
+                    </Link>
+                  </li>
                 </ul>
               </nav>
 
@@ -148,135 +203,307 @@ const Header: React.FC = () => {
 
             {/* Mobile toggle button & Cart */}
             <div className="header-bar-mobile side-menu d-xl-none ul_li" style={{ gap: '15px', alignItems: 'center' }}>
-              <Link href="/cart" className="cart-icon" style={{
-                position: 'relative',
-                padding: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                color: 'var(--color-heading)'
-              }}>
+              <Link 
+                href="/cart" 
+                className="cart-icon" 
+                style={{
+                  position: 'relative',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textDecoration: 'none',
+                  color: 'var(--color-heading)',
+                  borderRadius: '8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f6f6f8';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
                 <i className="fas fa-shopping-cart" style={{ fontSize: '20px' }}></i>
                 {getTotalItems() > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: '0',
-                    right: '0',
+                    top: '5px',
+                    right: '5px',
                     backgroundColor: 'var(--color-primary-two)',
                     color: '#fff',
                     borderRadius: '50%',
-                    width: '20px',
+                    minWidth: '20px',
                     height: '20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: '700'
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '0 5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}>
                     {getTotalItems()}
                   </span>
                 )}
               </Link>
-              <button className="xb-nav-mobile" onClick={() => setMobailState(!mobailActive)}>
+              <button 
+                className="xb-nav-mobile" 
+                onClick={() => setMobailState(!mobailActive)}
+                style={{
+                  padding: '10px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  color: 'var(--color-heading)',
+                  transition: 'all 0.3s ease',
+                  borderRadius: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f6f6f8';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
                 <i className="far fa-bars" />
               </button>
             </div>
 
             {/* Cart & Auth & CTA */}
-            <div className="header-contact d-none d-md-flex ul_li" style={{ gap: '15px', alignItems: 'center' }}>
-              <Link href="/cart" className="cart-icon" style={{
+            <div className="header-contact d-none d-md-flex ul_li" style={{ gap: '12px', alignItems: 'center' }}>
+              {/* Cart Icon */}
+              <Link 
+                href="/cart" 
+                className="cart-icon" 
+                style={{
                 position: 'relative',
-                padding: '10px',
+                  padding: '10px 12px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textDecoration: 'none',
-                color: 'var(--color-heading)'
-              }}>
+                  color: 'var(--color-heading)',
+                  borderRadius: '8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f6f6f8';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
                 <i className="fas fa-shopping-cart" style={{ fontSize: '20px' }}></i>
                 {getTotalItems() > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: '0',
-                    right: '0',
+                    top: '5px',
+                    right: '5px',
                     backgroundColor: 'var(--color-primary-two)',
                     color: '#fff',
                     borderRadius: '50%',
-                    width: '20px',
+                    minWidth: '20px',
                     height: '20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: '700'
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '0 5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    animation: getTotalItems() > 0 ? 'pulse 2s infinite' : 'none'
                   }}>
                     {getTotalItems()}
                   </span>
                 )}
               </Link>
               
+              {/* User Menu */}
               {user ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--color-default)' }}>
-                    {user.email?.split('@')[0]}
-                  </span>
+                <div className="user-menu-wrapper" style={{ position: 'relative' }}>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleLogout();
-                    }}
+                    onClick={() => setShowUserMenu(!showUserMenu)}
                     style={{
-                      padding: '8px 15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
                       border: '1px solid #e7e8ec',
                       backgroundColor: 'transparent',
-                      borderRadius: '7px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      color: 'var(--color-default)',
-                      transition: 'all 0.3s ease'
+                      color: 'var(--color-heading)',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = 'var(--color-primary-two)';
-                      e.currentTarget.style.color = 'var(--color-primary-two)';
+                      e.currentTarget.style.backgroundColor = '#f6f6f8';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = '#e7e8ec';
-                      e.currentTarget.style.color = 'var(--color-default)';
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    Logout
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--color-primary-two)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      {user.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <span>{user.email?.split('@')[0]}</span>
+                    <i className={`far fa-angle-${showUserMenu ? 'up' : 'down'}`} style={{ fontSize: '12px' }}></i>
                   </button>
+                  
+                  {/* Dropdown Menu */}
+                  {showUserMenu && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: '0',
+                      marginTop: '8px',
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      border: '1px solid #e7e8ec',
+                      minWidth: '200px',
+                      zIndex: 1000,
+                      overflow: 'hidden',
+                      animation: 'fadeIn 0.2s ease'
+                    }}>
+                      <div style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid #e7e8ec',
+                        backgroundColor: '#f6f6f8'
+                      }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-default)', marginBottom: '4px' }}>
+                          Signed in as
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-heading)' }}>
+                          {user.email}
+                        </div>
+                      </div>
+                      <Link
+                        href="/cart"
+                        onClick={() => setShowUserMenu(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '12px 16px',
+                          textDecoration: 'none',
+                          color: 'var(--color-heading)',
+                          fontSize: '14px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f6f6f8';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <i className="fas fa-shopping-cart" style={{ width: '16px' }}></i>
+                        <span>My Cart ({getTotalItems()} items)</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowUserMenu(false);
+                          handleLogout();
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '12px 16px',
+                          border: 'none',
+                          backgroundColor: 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          color: '#dc3545',
+                          fontSize: '14px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fee';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <i className="fas fa-sign-out-alt" style={{ width: '16px' }}></i>
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link 
                   href="/auth"
                   style={{
-                    padding: '8px 15px',
+                    padding: '10px 20px',
                     border: '1px solid var(--color-primary-two)',
                     backgroundColor: 'transparent',
-                    borderRadius: '7px',
+                    borderRadius: '8px',
                     textDecoration: 'none',
                     fontSize: '14px',
+                    fontWeight: '500',
                     color: 'var(--color-primary-two)',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--color-primary-two)';
                     e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(54, 147, 217, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'transparent';
                     e.currentTarget.style.color = 'var(--color-primary-two)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
+                  <i className="far fa-user" style={{ fontSize: '14px' }}></i>
                   Login
                 </Link>
               )}
               
-              <Link href="/contact" className="thm-btn thm-btn--aso thm-btn--header-black">
+              <Link 
+                href="/contact" 
+                className="thm-btn thm-btn--aso thm-btn--header-black"
+                style={{
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
                 Let's talk
                 <Image src="/images/icon/sms-white-icon01.svg" alt="Message Icon" width={20} height={20} />
               </Link>
@@ -285,6 +512,7 @@ const Header: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
