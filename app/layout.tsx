@@ -9,6 +9,7 @@ import "../styles/cursor.css";
 import "../styles/custom-font.css";
 import "../styles/main.css";
 import "../styles/ecommerce.css";
+import "../styles/premium-animations.css";
 import { CartProvider } from "../contexts/CartContext";
 
 export const metadata: Metadata = {

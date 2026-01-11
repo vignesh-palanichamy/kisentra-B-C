@@ -10,7 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Fade } from 'react-awesome-reveal';
 
 const CartPage: React.FC = () => {
-  const { cart, updateQuantity, removeFromCart, getSubtotal, getTax, getShipping, getTotal, clearCart } = useCart();
+  const { cart, updateQuantity, removeFromCart, getSubtotal, getTax, getShipping, getTotal, clearCart, getTotalItems } = useCart();
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
     updateQuantity(productId, newQuantity);

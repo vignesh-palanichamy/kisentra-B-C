@@ -28,6 +28,31 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Premium Scroll Reveal Animation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+        }
+      });
+    }, observerOptions);
+
+    const gridItems = document.querySelectorAll('.premium-grid-item');
+    gridItems.forEach((item) => observer.observe(item));
+
+    return () => {
+      gridItems.forEach((item) => observer.unobserve(item));
+    };
+  }, [isMounted]);
+
   // Amazon-style product categorization
   const categories = isMounted
     ? Array.from(new Set(products.map(p => p.category))).slice(0, 12)
@@ -72,184 +97,276 @@ const HomePage = () => {
     <Fragment>
       <div className='body_wrap sco_agency'>
         <Header />
-        <main className="page_content">
-          {/* Hero Banner Carousel - Amazon Style */}
-          <section style={{ backgroundColor: 'var(--color-primary-five)', position: 'relative', overflow: 'hidden' }}>
-            <div className="container-fluid" style={{ padding: 0 }}>
-              <div style={{ position: 'relative', height: '400px', overflow: 'hidden' }}>
-                {[0, 1, 2].map((index) => (
-                  <div
-                    key={index}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      opacity: currentBannerIndex === index ? 1 : 0,
-                      transition: 'opacity 1s ease-in-out',
-                      background: `linear-gradient(135deg, var(--color-primary-two) 0%, var(--color-primary-five) 100%)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--color-white)',
-                      padding: '60px 20px'
-                    }}
-                  >
-                    <div className="container">
-                      <div className="row align-items-center">
-                        <div className="col-lg-6">
-                          <Fade direction="left" triggerOnce={false}>
-                            <h1 style={{ fontSize: '48px', fontWeight: '700', marginBottom: '20px', color: 'var(--color-white)' }}>
-                              {index === 0 && 'Special Deals This Week!'}
-                              {index === 1 && 'Best Products at Best Prices'}
-                              {index === 2 && 'Shop Now & Save Big'}
-                            </h1>
-                            <p style={{ fontSize: '20px', marginBottom: '30px', color: 'var(--color-white)', opacity: 0.9 }}>
-                              {index === 0 && 'Get up to 50% off on selected items'}
-                              {index === 1 && 'Premium quality products for your business'}
-                              {index === 2 && 'Limited time offers - Don\'t miss out!'}
-                            </p>
-                            <Link href="/products" className="thm-btn thm-btn--aso thm-btn--aso_yellow" style={{ fontSize: '18px', padding: '15px 40px' }}>
-                              Shop Now
-                            </Link>
-                          </Fade>
-                        </div>
-                        <div className="col-lg-6">
-                          <Fade direction="right" triggerOnce={false}>
-                            <div style={{ textAlign: 'center', fontSize: '120px', opacity: 0.2 }}>
-                              🛒
-                            </div>
-                          </Fade>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Banner Navigation Dots */}
+        <main className="page_content" style={{ paddingTop: '160px' }}>
+
+          {/* Category Bar - Modern Pills */}
+          {categories.length > 0 && (
+            <section style={{ marginBottom: '50px', marginTop: '20px' }}>
+              <div className="container">
                 <div style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
                   display: 'flex',
-                  gap: '10px',
-                  zIndex: 10
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '12px'
                 }}>
-                  {[0, 1, 2].map((index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentBannerIndex(index)}
+                  {categories.map((category, index) => (
+                    <Link
+                      key={category}
+                      href={`/products?category=${encodeURIComponent(category)}`}
+                      className="category-pill"
                       style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        backgroundColor: currentBannerIndex === index ? 'var(--color-white)' : 'rgba(255,255,255,0.5)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '10px 20px',
+                        backgroundColor: 'var(--color-white)',
+                        borderRadius: '30px',
+                        textDecoration: 'none',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        border: '1px solid #eee',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        cursor: 'pointer'
                       }}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = 'var(--color-primary-two)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                        e.currentTarget.style.borderColor = '#eee';
+                      }}
+                    >
+                      <span style={{
+                        fontSize: '18px',
+                        marginRight: '10px',
+                        lineHeight: 1
+                      }}>
+                        {['📱', '👗', '👟', '🏠', '💄', '🧸', '🚲'][index % 7]}
+                      </span>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'var(--color-heading)',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {category}
+                      </span>
+                    </Link>
                   ))}
                 </div>
+              </div>
+            </section>
+          )}
+
+          {/* Hero Banner - Yellow Collection Slider */}
+          <section style={{
+            marginBottom: '60px',
+            padding: '0 15px'
+          }}>
+            <div className="container" style={{ maxWidth: '1600px' }}>
+              <div style={{
+                backgroundColor: '#ffc220',
+                borderRadius: '20px',
+                padding: '60px 80px',
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: '400px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <div className="row w-100 align-items-center">
+
+                  {/* Left Content */}
+                  <div className="col-lg-5">
+                    <Fade direction="left" triggerOnce>
+                      <div>
+                        <h2 style={{
+                          fontSize: '48px',
+                          fontWeight: '800',
+                          color: '#222',
+                          marginBottom: '20px',
+                          lineHeight: '1.1'
+                        }}>
+                          Build an elite collection
+                        </h2>
+                        <p style={{
+                          fontSize: '18px',
+                          color: '#333',
+                          marginBottom: '35px',
+                          fontWeight: '500'
+                        }}>
+                          Choose your next adventure from thousands of finds.
+                        </p>
+                        <Link href="/products" style={{
+                          display: 'inline-block',
+                          backgroundColor: '#4a3b18',
+                          color: '#ffc220',
+                          padding: '15px 35px',
+                          borderRadius: '30px',
+                          fontWeight: '700',
+                          textDecoration: 'none',
+                          transition: 'transform 0.2s',
+                          border: '2px solid transparent'
+                        }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          Start your journey
+                        </Link>
+                      </div>
+                    </Fade>
+                  </div>
+
+                  {/* Right Content - Categories */}
+                  <div className="col-lg-7">
+                    <Fade direction="right" triggerOnce>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        alignItems: 'flex-end',
+                        textAlign: 'center',
+                        flexWrap: 'wrap',
+                        gap: '20px'
+                      }}>
+                        {/* Item 1: Lego */}
+                        <Link href="/products?category=lego" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
+                          <div style={{
+                            width: '180px',
+                            height: '180px',
+                            position: 'relative',
+                            marginBottom: '15px'
+                          }}>
+                            {/* Placeholder for Lego Temple Image - Using a generic toy/building block image or colored div for now if specific asset not available */}
+                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x200/png?text=Lego+Set) no-repeat center center / contain' }}></div>
+                          </div>
+                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Lego <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
+                        </Link>
+
+                        {/* Item 2: Coins */}
+                        <Link href="/products?category=coins" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
+                          <div style={{
+                            width: '160px',
+                            height: '160px',
+                            position: 'relative',
+                            marginBottom: '15px'
+                          }}>
+                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x200/png?text=Rare+Coins) no-repeat center center / contain' }}></div>
+                          </div>
+                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Coins <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
+                        </Link>
+
+                        {/* Item 3: Comic Books */}
+                        <Link href="/products?category=comics" className="hero-cat-item" style={{ textDecoration: 'none', color: '#000', transition: 'transform 0.3s' }}>
+                          <div style={{
+                            width: '170px',
+                            height: '200px',
+                            position: 'relative',
+                            marginBottom: '15px'
+                          }}>
+                            <div style={{ width: '100%', height: '100%', background: 'url(https://placehold.co/200x250/png?text=Comics) no-repeat center center / contain' }}></div>
+                          </div>
+                          <span style={{ fontSize: '16px', fontWeight: '700' }}>Comic books <i className="far fa-chevron-right" style={{ fontSize: '12px' }}></i></span>
+                        </Link>
+                      </div>
+                    </Fade>
+                  </div>
+
+                </div>
+
+                {/* Slider Controls */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '30px',
+                  right: '40px',
+                  display: 'flex',
+                  gap: '10px'
+                }}>
+                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                    <i className="fas fa-chevron-left" style={{ fontSize: '12px', color: '#333' }}></i>
+                  </button>
+                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                    <i className="fas fa-chevron-right" style={{ fontSize: '12px', color: '#333' }}></i>
+                  </button>
+                  <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: 'none', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                    <i className="fas fa-pause" style={{ fontSize: '12px', color: '#333' }}></i>
+                  </button>
+                </div>
+
               </div>
             </div>
           </section>
 
-          {/* Category Grid - Amazon Style */}
-          {categories.length > 0 && (
-            <section className="service pt-80 pb-80" style={{ backgroundColor: 'var(--color-white)' }}>
+          {/* Featured / Deals Section - Custom Design */}
+          {todaysDeals.length > 0 && (
+            <section style={{ marginBottom: '80px' }}>
               <div className="container">
-                <div className="row">
-                  <div className="col-12 mb-40">
-                    <h2 className="title text-center" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--color-heading)' }}>
-                      Shop by Category
+                <div className="row mb-40 align-items-end">
+                  <div className="col-lg-8">
+                    <span style={{
+                      color: 'var(--color-primary-two)',
+                      fontWeight: '700',
+                      letterSpacing: '2px',
+                      textTransform: 'uppercase',
+                      fontSize: '12px',
+                      display: 'block',
+                      marginBottom: '10px'
+                    }}>Don't Miss Out</span>
+                    <h2 className="title" style={{
+                      fontSize: '36px',
+                      marginBottom: 0,
+                      position: 'relative',
+                      display: 'inline-block'
+                    }}>
+                      Lightning Deals
+                      <span style={{
+                        position: 'absolute',
+                        bottom: '5px',
+                        right: '-15px',
+                        width: '8px',
+                        height: '8px',
+                        backgroundColor: 'var(--color-primary-two)',
+                        borderRadius: '50%'
+                      }}></span>
                     </h2>
                   </div>
+                  <div className="col-lg-4 text-lg-end">
+                    <Link href="/products" className="text-btn">
+                      View All Collections <i className="far fa-long-arrow-right" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="row">
+                  {todaysDeals.slice(0, 4).map((product) => (
+                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mb-40">
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Best Sellers Section */}
+          {bestSellers.length > 0 && (
+            <section style={{
+              marginBottom: '80px',
+              backgroundColor: 'var(--color-body)',
+              padding: '80px 0',
+              position: 'relative'
+            }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.03, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+              <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+                <div className="row mb-50 text-center">
+                  <div className="col-12">
+                    <h2 className="title" style={{ fontSize: '36px' }}>Curated Best Sellers</h2>
+                    <div style={{ width: '60px', height: '4px', backgroundColor: 'var(--color-primary-two)', margin: '20px auto' }}></div>
+                  </div>
                 </div>
                 <div className="row">
-                  {categories.map((category, index) => (
-                    <div key={category} className="col-lg-2 col-md-3 col-sm-4 col-6 mb-30">
-                      <Fade direction="up" triggerOnce duration={600} delay={index * 100}>
-                        <Link
-                          href={`/products?category=${encodeURIComponent(category)}`}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            padding: '30px 20px',
-                            backgroundColor: 'var(--color-body)',
-                            borderRadius: '15px',
-                            textDecoration: 'none',
-                            color: 'var(--color-heading)',
-                            transition: 'all 0.3s ease',
-                            border: '2px solid transparent'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--color-white)';
-                            e.currentTarget.style.borderColor = 'var(--color-primary-two)';
-                            e.currentTarget.style.transform = 'translateY(-5px)';
-                            e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--color-body)';
-                            e.currentTarget.style.borderColor = 'transparent';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        >
-                          <div style={{
-                            width: '60px',
-                            height: '60px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-primary-two)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '15px',
-                            fontSize: '24px',
-                            color: 'var(--color-white)'
-                          }}>
-                            <i className="fas fa-box"></i>
-                          </div>
-                          <span style={{ fontSize: '14px', fontWeight: '600', textAlign: 'center' }}>
-                            {category}
-                          </span>
-                        </Link>
-                      </Fade>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Today's Deals - Amazon Style */}
-          {todaysDeals.length > 0 && (
-            <section className="service pt-100 pb-100" style={{ backgroundColor: 'var(--color-body)' }}>
-              <div className="container">
-                <div className="row mb-50">
-                  <div className="col-12">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-                      <div>
-                        <h2 className="title" style={{ fontSize: '32px', fontWeight: '700', marginBottom: '10px', color: 'var(--color-heading)' }}>
-                          <span style={{ color: 'var(--color-primary)' }}>🔥</span> Today's Deals
-                        </h2>
-                        <p className="content" style={{ fontSize: '16px', color: 'var(--color-default)' }}>
-                          Limited time offers - Don't miss out!
-                        </p>
-                      </div>
-                      <Link href="/products" className="thm-btn thm-btn--border" style={{ whiteSpace: 'nowrap' }}>
-                        View All Deals
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-                <div className="row mt-none-30">
-                  {todaysDeals.map((product) => (
-                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mt-30">
+                  {bestSellers.slice(0, 4).map((product) => (
+                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mb-30">
                       <ProductCard product={product} />
                     </div>
                   ))}
@@ -258,39 +375,27 @@ const HomePage = () => {
             </section>
           )}
 
-          {/* Best Sellers */}
-          {bestSellers.length > 0 && (
-            <ProductCarousel
-              title="Best Sellers"
-              subtitle="Most popular products loved by customers"
-              products={bestSellers}
-            />
-          )}
-
-          {/* New Arrivals */}
+          {/* New Arrivals Grid */}
           {newArrivals.length > 0 && (
-            <section className="service pt-100 pb-100" style={{ backgroundColor: 'var(--color-white)' }}>
+            <section style={{ marginBottom: '80px' }}>
               <div className="container">
                 <div className="row mb-50">
                   <div className="col-12">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-                      <div>
-                        <h2 className="title" style={{ fontSize: '32px', fontWeight: '700', marginBottom: '10px', color: 'var(--color-heading)' }}>
-                          ✨ New Arrivals
-                        </h2>
-                        <p className="content" style={{ fontSize: '16px', color: 'var(--color-default)' }}>
-                          Fresh products just added to our collection
-                        </p>
-                      </div>
-                      <Link href="/products" className="thm-btn thm-btn--border" style={{ whiteSpace: 'nowrap' }}>
-                        View All
-                      </Link>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderBottom: '1px solid #eee',
+                      paddingBottom: '20px'
+                    }}>
+                      <h2 className="title" style={{ fontSize: '32px', margin: 0 }}>Fresh Arrivals</h2>
+                      <Link href="/products" style={{ fontWeight: '600', color: 'var(--color-primary-two)' }}>See All New Items</Link>
                     </div>
                   </div>
                 </div>
-                <div className="row mt-none-30">
-                  {newArrivals.map((product) => (
-                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mt-30">
+                <div className="row">
+                  {newArrivals.slice(0, 8).map((product) => (
+                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mb-40">
                       <ProductCard product={product} />
                     </div>
                   ))}
@@ -299,104 +404,50 @@ const HomePage = () => {
             </section>
           )}
 
-          {/* Top Rated Products */}
-          {topRated.length > 0 && (
-            <ProductCarousel
-              title="Top Rated Products"
-              subtitle="Highest rated products with excellent reviews"
-              products={topRated}
-            />
-          )}
-
-          {/* Customer Favorites */}
-          {customerFavorites.length > 0 && (
-            <section className="service pt-100 pb-100" style={{ backgroundColor: 'var(--color-body)' }}>
-              <div className="container">
-                <div className="row mb-50">
-                  <div className="col-12">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-                      <div>
-                        <h2 className="title" style={{ fontSize: '32px', fontWeight: '700', marginBottom: '10px', color: 'var(--color-heading)' }}>
-                          <span style={{ color: 'var(--color-yellow)' }}>⭐</span> Customer Favorites
-                        </h2>
-                        <p className="content" style={{ fontSize: '16px', color: 'var(--color-default)' }}>
-                          Products our customers love the most
-                        </p>
-                      </div>
-                      <Link href="/products" className="thm-btn thm-btn--border" style={{ whiteSpace: 'nowrap' }}>
-                        View All
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-                <div className="row mt-none-30">
-                  {customerFavorites.map((product) => (
-                    <div key={product.Id} className="col-lg-3 col-md-4 col-sm-6 mt-30">
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Recommended For You */}
-          {recommendedForYou.length > 0 && (
-            <ProductCarousel
-              title="Recommended For You"
-              subtitle="Based on your browsing history"
-              products={recommendedForYou}
-            />
-          )}
-
-          {/* Benefits Section - Amazon Prime Style */}
-          <section className="service pt-80 pb-80" style={{ backgroundColor: 'var(--color-primary-five)', color: 'var(--color-white)' }}>
+          {/* Benefits Section - Modern Grid */}
+          <section className="service" style={{
+            marginBottom: '80px',
+            padding: '0 20px'
+          }}>
             <div className="container">
-              <div className="row">
-                <div className="col-12 mb-50">
-                  <h2 className="title text-center" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--color-white)', marginBottom: '10px' }}>
-                    Why Shop With Us?
-                  </h2>
-                  <p className="content text-center" style={{ fontSize: '18px', color: 'var(--color-white)', opacity: 0.8 }}>
-                    Premium benefits for all our customers
-                  </p>
-                </div>
-              </div>
-              <div className="row">
+              <div className="row g-4">
                 {[
-                  { icon: '🚚', title: 'Free Shipping', desc: 'On orders over $100' },
-                  { icon: '🔒', title: 'Secure Payment', desc: '100% secure transactions' },
-                  { icon: '↩️', title: 'Easy Returns', desc: '30-day return policy' },
-                  { icon: '💬', title: '24/7 Support', desc: 'Always here to help' },
-                  { icon: '⭐', title: 'Quality Guaranteed', desc: 'Premium products only' },
-                  { icon: '🎁', title: 'Special Offers', desc: 'Exclusive deals daily' }
+                  { icon: '🚚', title: 'Global Shipping', desc: 'Secure delivery to 100+ countries' },
+                  { icon: '🛡️', title: 'Buyer Protection', desc: 'Full refund if not as described' },
+                  { icon: '🤝', title: '24/7 Support', desc: 'Dedicated support team' },
+                  { icon: '✨', title: 'Quality Promise', desc: 'Handpicked premium items' }
                 ].map((benefit, index) => (
-                  <div key={index} className="col-lg-2 col-md-4 col-sm-6 mb-30">
+                  <div key={index} className="col-xl-3 col-lg-6">
                     <Fade direction="up" triggerOnce duration={600} delay={index * 100}>
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '30px 20px',
-                        borderRadius: '15px',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-                        e.currentTarget.style.transform = 'translateY(-5px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '30px',
+                          borderRadius: '20px',
+                          backgroundColor: 'var(--color-white)',
+                          boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
+                          border: '1px solid rgba(0,0,0,0.02)',
+                          transition: 'transform 0.3s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                       >
-                        <div style={{ fontSize: '48px', marginBottom: '15px' }}>{benefit.icon}</div>
-                        <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '10px', color: 'var(--color-white)' }}>
-                          {benefit.title}
-                        </h3>
-                        <p style={{ fontSize: '14px', color: 'var(--color-white)', opacity: 0.7 }}>
-                          {benefit.desc}
-                        </p>
+                        <div style={{
+                          fontSize: '32px',
+                          marginRight: '20px',
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '15px',
+                          backgroundColor: 'var(--color-body)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>{benefit.icon}</div>
+                        <div>
+                          <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '5px', color: 'var(--color-heading)' }}>{benefit.title}</h3>
+                          <p style={{ color: 'var(--color-text)', fontSize: '14px', marginBottom: 0, lineHeight: 1.4 }}>{benefit.desc}</p>
+                        </div>
                       </div>
                     </Fade>
                   </div>
@@ -405,70 +456,63 @@ const HomePage = () => {
             </div>
           </section>
 
-          {/* Newsletter Section */}
-          <section className="service pt-80 pb-80" style={{ backgroundColor: 'var(--color-body)' }}>
-            <div className="container">
-              <div className="row">
-                <div className="col-lg-8 offset-lg-2">
-                  <Fade direction="up" triggerOnce duration={1000}>
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '60px 40px',
-                      backgroundColor: 'var(--color-white)',
-                      borderRadius: '15px',
-                      border: '1px solid #e7e8ec'
-                    }}>
-                      <h2 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '15px', color: 'var(--color-heading)' }}>
-                        Stay Updated
-                      </h2>
-                      <p style={{ fontSize: '16px', color: 'var(--color-default)', marginBottom: '30px' }}>
-                        Subscribe to our newsletter and get exclusive deals and updates
-                      </p>
-                      <form 
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          // Handle newsletter subscription
+          {/* Newsletter Section - Uniquely Shaped */}
+          <section className="newsletter-section" style={{
+            padding: '100px 0',
+            backgroundColor: '#111',
+            borderRadius: '40px 40px 0 0',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Abstract Background Shapes */}
+            <div style={{ position: 'absolute', top: '-50%', left: '-20%', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle, var(--color-primary-two) 0%, transparent 60%)', opacity: 0.1, filter: 'blur(80px)' }}></div>
+            <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 60%)', opacity: 0.1, filter: 'blur(60px)' }}></div>
+
+            <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+              <div className="row justify-content-center">
+                <div className="col-lg-8 text-center">
+                  <span style={{ color: 'var(--color-primary-two)', fontWeight: 'bold', letterSpacing: '2px', fontSize: '12px', textTransform: 'uppercase' }}>Join The Community</span>
+                  <h2 style={{ color: '#fff', fontSize: '48px', fontWeight: '800', marginTop: '20px', marginBottom: '20px' }}>Stay Ahead of the Curve</h2>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '50px', fontSize: '18px' }}>Be the first to know about new collections and exclusive events.</p>
+
+                  <div style={{ position: 'relative', maxWidth: '500px', margin: '0 auto' }}>
+                    <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', backgroundColor: 'rgba(255,255,255,0.1)', padding: '5px', borderRadius: '50px' }}>
+                      <input
+                        type="email"
+                        placeholder="Your email address"
+                        style={{
+                          flex: 1,
+                          padding: '20px 30px',
+                          background: 'transparent',
+                          border: 'none',
+                          outline: 'none',
+                          color: '#fff',
+                          fontSize: '16px'
                         }}
-                        style={{ display: 'flex', gap: '10px', maxWidth: '500px', margin: '0 auto', flexWrap: 'wrap' }}
-                      >
-                        <input
-                          type="email"
-                          placeholder="Enter your email"
-                          required
-                          style={{
-                            flex: 1,
-                            minWidth: '200px',
-                            padding: '15px 20px',
-                            borderRadius: '7px',
-                            border: '1px solid #e7e8ec',
-                            fontSize: '16px',
-                            fontFamily: 'var(--font-body)',
-                            outline: 'none',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = 'var(--color-primary-two)';
-                            e.target.style.boxShadow = '0 0 0 3px rgba(15, 83, 220, 0.1)';
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = '#e7e8ec';
-                            e.target.style.boxShadow = 'none';
-                          }}
-                        />
-                        <button type="submit" className="thm-btn thm-btn--aso thm-btn--aso_yellow" style={{ whiteSpace: 'nowrap' }}>
-                          Subscribe
-                        </button>
-                      </form>
-                    </div>
-                  </Fade>
+                      />
+                      <button type="submit" style={{
+                        backgroundColor: 'var(--color-primary-two)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50px',
+                        padding: '0 40px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s'
+                      }} className="hover-brightness">
+                        Join
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
+
         </main>
         <Footer />
-        <Scrollbar />
       </div>
+      <Scrollbar />
     </Fragment>
   );
 };

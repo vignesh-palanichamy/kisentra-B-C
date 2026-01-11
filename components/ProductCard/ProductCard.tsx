@@ -14,26 +14,27 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
   const [addedToCart, setAddedToCart] = useState(false);
-  
+  const [isHovered, setIsHovered] = useState(false);
+
   // Safely get the main image with fallback
   const getMainImage = () => {
     if (!product.images || product.images.length === 0) {
       return '/images/placeholder.jpg'; // Fallback placeholder
     }
-    
+
     const firstImage = product.images[0];
     if (typeof firstImage === 'string') {
       return firstImage;
     }
-    
+
     // Handle StaticImageData or object with src property
     if (firstImage && typeof firstImage === 'object') {
       return (firstImage as any).src || firstImage;
     }
-    
+
     return '/images/placeholder.jpg'; // Final fallback
   };
-  
+
   const mainImage = getMainImage();
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -44,66 +45,175 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
+  const discountPercentage = product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
+
   return (
     <Fade direction="up" triggerOnce duration={600}>
-      <div className="product-card-wrapper">
-        <div className="service-box product-card">
-          <div className="service-item product-card-item">
-            {/* Product Image - Clickable to go to details */}
-            <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="product-card-image">
-                <Image
-                  src={mainImage}
-                  alt={product.title}
-                  width={300}
-                  height={300}
-                  style={{ objectFit: 'cover', width: '100%', height: 'auto' }}
-                />
-              </div>
-            </Link>
-            
-            {/* Product Title - Clickable to go to details */}
-            <div className="xb-item--holder mb-30 mt-30">
-              <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <h3 className="xb-item--title">{product.title}</h3>
-              </Link>
-              <span className="xb-item--contact">{product.description}</span>
-            </div>
+      <div
+        className="product-card-wrapper"
+        style={{ height: '100%' }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div
+          className="product-card"
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '1px solid #f0f0f0',
+            transition: 'all 0.3s ease',
+            boxShadow: isHovered ? '0 12px 24px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
+          }}
+        >
+          {/* Wishlist Icon */}
+          <button
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 10,
+              background: 'rgba(255,255,255,0.9)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#c2c2c2',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+            }}
+            onClick={(e) => { e.preventDefault(); /* Add wishlist logic later */ }}
+          >
+            <i className="fas fa-heart"></i>
+          </button>
 
-            <div className="product-card-footer ul_li_between">
-              <div className="product-price">
-                <span className="current-price">${product.price}</span>
-                {product.originalPrice && (
-                  <span className="original-price">${product.originalPrice}</span>
-                )}
-              </div>
-              
-              {product.rating && (
-                <div className="product-rating">
-                  <i className="fas fa-star"></i>
-                  <span>{product.rating}</span>
-                  {product.reviews && <span className="reviews-count">({product.reviews})</span>}
+          {/* Product Image */}
+          <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', display: 'block', position: 'relative' }}>
+            <div className="product-card-image" style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden' }}>
+              <Image
+                src={mainImage}
+                alt={product.title}
+                fill
+                style={{
+                  objectFit: 'contain',
+                  padding: '24px',
+                  transition: 'transform 0.5s ease'
+                }}
+                className={isHovered ? 'scale-110' : ''}
+              />
+              {/* Discount Badge */}
+              {discountPercentage > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  background: '#388e3c', // Flipkart Green
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  zIndex: 2
+                }}>
+                  {discountPercentage}% Off
                 </div>
               )}
             </div>
+          </Link>
 
-            {/* Add to Cart Button - Works directly without navigation */}
-            <div className="product-card-actions mt-30">
-              <button
-                onClick={handleAddToCart}
-                className="thm-btn thm-btn--aso thm-btn--aso_yellow w-100"
-                style={{ width: '100%' }}
+          {/* Product Details */}
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <h3
+                className="product-title"
+                style={{
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  color: '#212121',
+                  marginBottom: '8px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  lineHeight: '1.4',
+                  height: '44px' // Fixed height for alignment
+                }}
               >
-                {addedToCart ? (
-                  <>
-                    <i className="fas fa-check" style={{ marginRight: '8px' }}></i>
-                    Added!
-                  </>
-                ) : (
-                  'Add to Cart'
-                )}
-              </button>
+                {product.title}
+              </h3>
+            </Link>
+
+            {product.rating && (
+              <div className="product-rating" style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
+                <span style={{
+                  background: '#388e3c',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  {product.rating} <i className="fas fa-star" style={{ fontSize: '10px' }}></i>
+                </span>
+                {product.reviews && <span style={{ color: '#878787', fontSize: '14px', fontWeight: '500' }}>({product.reviews})</span>}
+                {/* Flipkart Assured-like badge for premium feel */}
+                <Image src="/assets/img/icon/check.png" alt="" width={16} height={16} style={{ display: 'none' }} />
+              </div>
+            )}
+
+            <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 'auto' }}>
+              <span style={{ fontSize: '18px', fontWeight: '600', color: '#212121' }}>${product.price}</span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <>
+                  <span style={{ fontSize: '14px', color: '#878787', textDecoration: 'line-through' }}>${product.originalPrice}</span>
+                  <span style={{ fontSize: '13px', color: '#388e3c', fontWeight: '700' }}>
+                    {discountPercentage}% off
+                  </span>
+                </>
+              )}
             </div>
+
+            {/* Add to Cart Button */}
+            <button
+              onClick={handleAddToCart}
+              style={{
+                marginTop: '16px',
+                width: '100%',
+                padding: '10px 0',
+                background: addedToCart ? '#388e3c' : isHovered ? '#2874f0' : '#fff', // Flipkart Blue on Hover
+                color: addedToCart || isHovered ? '#fff' : '#2874f0',
+                border: `1px solid ${addedToCart ? '#388e3c' : '#2874f0'}`,
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                textTransform: 'uppercase'
+              }}
+            >
+              {addedToCart ? (
+                <>
+                  <i className="fas fa-check" style={{ marginRight: '6px' }}></i>
+                  Added
+                </>
+              ) : (
+                'Add to Cart'
+              )}
+            </button>
           </div>
         </div>
       </div>
