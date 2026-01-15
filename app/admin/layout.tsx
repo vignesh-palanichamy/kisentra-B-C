@@ -13,7 +13,7 @@ const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     // Wait for auth check to complete
     if (isLoading) return;
-    
+
     // Allow access to login page without authentication
     if (pathname !== '/admin/login' && !isAuthenticated) {
       // Use window.location for immediate redirect (prevents any rendering)
@@ -155,6 +155,21 @@ const AdminLayoutContent: React.FC<{ children: React.ReactNode }> = ({ children 
             >
               <i className="fas fa-box" style={{ marginRight: '10px' }}></i>
               Products
+            </Link>
+            <Link
+              href="/admin/categories"
+              style={{
+                display: 'block',
+                padding: '12px 30px',
+                color: pathname === '/admin/categories' ? 'var(--color-primary-two)' : 'var(--color-heading)',
+                textDecoration: 'none',
+                fontWeight: pathname === '/admin/categories' ? '600' : '400',
+                backgroundColor: pathname === '/admin/categories' ? '#f6f6f8' : 'transparent',
+                borderLeft: pathname === '/admin/categories' ? '3px solid var(--color-primary-two)' : '3px solid transparent'
+              }}
+            >
+              <i className="fas fa-tags" style={{ marginRight: '10px' }}></i>
+              Categories
             </Link>
           </nav>
         </aside>

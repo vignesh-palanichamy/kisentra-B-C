@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Product, getProducts, saveProducts } from '@/api/products';
+import { getCategories, Category } from '@/api/categories';
 import Products from '@/api/products';
 import { Fade } from 'react-awesome-reveal';
 import Image from 'next/image';
@@ -27,7 +28,7 @@ const AdminProductsPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated) return; // Don't load if not authenticated
-    
+
     loadProducts();
     const action = searchParams?.get('action');
     if (action === 'add') {
@@ -172,14 +173,14 @@ const AdminProductsPage: React.FC = () => {
                   const mainImage = typeof product.images[0] === 'string'
                     ? product.images[0]
                     : product.images[0]?.src || product.images[0];
-                  
+
                   return (
                     <tr key={product.Id} style={{
                       borderBottom: '1px solid #e7e8ec',
                       transition: 'background-color 0.2s'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                       <td style={{ padding: '15px' }}>
                         <div style={{
@@ -363,6 +364,12 @@ const ProductForm: React.FC<{
   onSave: (data: Partial<Product>) => void;
   onCancel: () => void;
 }> = ({ product, onSave, onCancel }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    getCategories().then(setCategories);
+  }, []);
+
   const [formData, setFormData] = useState<Partial<Product>>({
     title: product?.title || '',
     slug: product?.slug || '',
@@ -425,8 +432,71 @@ const ProductForm: React.FC<{
     });
   };
 
+  // Image compression helper
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = document.createElement('img');
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to JPEG 70%
+        };
+      };
+    });
+  };
+
+  const handleDragDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const target = e.currentTarget as HTMLElement;
+    target.style.borderColor = '#e0e0e0';
+    target.style.backgroundColor = '#f8f9fa';
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const compressedImages = await Promise.all(files.map(compressImage));
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...compressedImages]
+      }));
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      const compressedImages = await Promise.all(files.map(compressImage));
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...compressedImages]
+      }));
+    }
+  };
+
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         top: 0,
@@ -448,18 +518,18 @@ const ProductForm: React.FC<{
         }
       }}
     >
-      <div 
+      <div
         onClick={(e) => e.stopPropagation()}
         style={{
-        backgroundColor: '#fff',
-        padding: '40px',
-        borderRadius: '15px',
-        maxWidth: '800px',
-        width: '100%',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        position: 'relative'
-      }}>
+          backgroundColor: '#fff',
+          padding: '40px',
+          borderRadius: '15px',
+          maxWidth: '800px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          position: 'relative'
+        }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -549,14 +619,131 @@ const ProductForm: React.FC<{
               />
             </div>
 
+            <div className="col-12 mb-30">
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
+                Product Images *
+              </label>
+              <div
+                style={{
+                  border: '2px dashed #e0e0e0',
+                  borderRadius: '10px',
+                  padding: '30px',
+                  textAlign: 'center',
+                  backgroundColor: '#f8f9fa',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  position: 'relative'
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = 'var(--color-primary-two)';
+                  e.currentTarget.style.backgroundColor = '#f0f7ff';
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = '#e0e0e0';
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onDrop={handleDragDrop}
+                onClick={() => document.getElementById('product-image-upload')?.click()}
+              >
+                <input
+                  type="file"
+                  id="product-image-upload"
+                  multiple
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleFileSelect}
+                />
+                <i className="fas fa-cloud-upload-alt" style={{ fontSize: '40px', color: '#bdbdbd', marginBottom: '15px' }}></i>
+                <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px', color: '#424242' }}>
+                  Drag & Drop images here
+                </h4>
+                <p style={{ color: '#9e9e9e', fontSize: '13px', margin: 0 }}>
+                  or <span style={{ color: 'var(--color-primary-two)', fontWeight: '600' }}>Browse Files</span>
+                </p>
+              </div>
+
+              {/* Image Previews */}
+              {formData.images && formData.images.length > 0 && (
+                <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
+                  {formData.images.map((img, index) => (
+                    <div key={index} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                      <img
+                        src={typeof img === 'string' ? img : (img as any).src}
+                        alt={`Preview ${index}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            images: prev.images?.filter((_, i) => i !== index)
+                          }));
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(255,255,255,0.9)',
+                          border: 'none',
+                          color: '#ff4d4f',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#ff4d4f';
+                          e.currentTarget.style.color = '#fff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                          e.currentTarget.style.color = '#ff4d4f';
+                        }}
+                      >
+                        ×
+                      </button>
+                      {index === 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          color: '#fff',
+                          fontSize: '10px',
+                          padding: '4px',
+                          textAlign: 'center',
+                          fontWeight: '600'
+                        }}>
+                          Cover Image
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+
             <div className="col-md-6 mb-20">
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
                 Price *
               </label>
               <input
                 type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                value={formData.price ?? ''}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setFormData({ ...formData, price: isNaN(val) ? undefined : val });
+                }}
                 required
                 min="0"
                 step="0.01"
@@ -576,7 +763,7 @@ const ProductForm: React.FC<{
               </label>
               <input
                 type="number"
-                value={formData.originalPrice || ''}
+                value={formData.originalPrice ?? ''}
                 onChange={(e) => setFormData({
                   ...formData,
                   originalPrice: e.target.value ? parseFloat(e.target.value) : undefined
@@ -597,8 +784,7 @@ const ProductForm: React.FC<{
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
                 Category *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
@@ -607,9 +793,18 @@ const ProductForm: React.FC<{
                   padding: '12px 20px',
                   borderRadius: '7px',
                   border: '1px solid #e7e8ec',
-                  fontSize: '16px'
+                  fontSize: '16px',
+                  backgroundColor: '#fff',
+                  cursor: 'pointer'
                 }}
-              />
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id || cat.slug} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="col-md-6 mb-20">
@@ -618,7 +813,7 @@ const ProductForm: React.FC<{
               </label>
               <input
                 type="number"
-                value={formData.rating || ''}
+                value={formData.rating ?? ''}
                 onChange={(e) => setFormData({
                   ...formData,
                   rating: e.target.value ? parseFloat(e.target.value) : undefined
@@ -839,9 +1034,9 @@ const ProductForm: React.FC<{
               {product ? 'Update Product' : 'Add Product'}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+        </form >
+      </div >
+    </div >
   );
 };
 

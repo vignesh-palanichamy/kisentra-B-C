@@ -3,6 +3,8 @@
 import React, { Fragment } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
@@ -10,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Fade } from 'react-awesome-reveal';
 
 const CartPage: React.FC = () => {
+  const router = useRouter();
   const { cart, updateQuantity, removeFromCart, getSubtotal, getTax, getShipping, getTotal, clearCart, getTotalItems } = useCart();
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
@@ -302,13 +305,20 @@ const CartPage: React.FC = () => {
                       </div>
 
                       <div className="cart-actions" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <Link
-                          href="/checkout"
+                        <button
+                          onClick={async () => {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session) {
+                              router.push('/auth');
+                            } else {
+                              router.push('/checkout');
+                            }
+                          }}
                           className="thm-btn thm-btn--aso thm-btn--aso_yellow"
-                          style={{ width: '100%', textAlign: 'center' }}
+                          style={{ width: '100%', textAlign: 'center', cursor: 'pointer', border: 'none' }}
                         >
                           Place Order
-                        </Link>
+                        </button>
                         <Link
                           href="/products"
                           className="thm-btn thm-btn--border"

@@ -11,7 +11,7 @@ import Link from 'next/link';
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAdmin();
-  
+
   // Immediate redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -254,6 +254,13 @@ const AdminDashboard: React.FC = () => {
             >
               <i className="fas fa-store" style={{ marginRight: '8px' }}></i>
               View Storefront
+            </Link>
+            <Link
+              href="/admin/categories"
+              className="thm-btn thm-btn--border"
+            >
+              <i className="fas fa-tags" style={{ marginRight: '8px' }}></i>
+              Manage Categories
             </Link>
           </div>
         </div>

@@ -45,14 +45,13 @@ const AuthPage: React.FC = () => {
         });
 
         if (error) {
-          // Check if it's an email confirmation error
           if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
             setError('Email not confirmed. Please check your email for the verification link, or click "Resend Confirmation Email" below.');
           } else {
             setError(error.message);
           }
         } else if (data.user) {
-          setMessage('Successfully logged in! Redirecting...');
+          setMessage('Successfully logged in!');
           setTimeout(() => {
             router.push('/');
             router.refresh();
@@ -68,12 +67,11 @@ const AuthPage: React.FC = () => {
         if (error) {
           setError(error.message);
         } else if (data.user) {
-          // Check if email confirmation is required
           if (data.user.email_confirmed_at) {
             setMessage('Account created successfully! You can now log in.');
             setIsLogin(true);
           } else {
-            setMessage('Account created! Please check your email to verify your account. If email confirmation is disabled, you can log in now.');
+            setMessage('Account created! Please check your email to verify your account.');
             setIsLogin(true);
           }
         }
@@ -104,7 +102,7 @@ const AuthPage: React.FC = () => {
       if (error) {
         setError(error.message);
       } else {
-        setMessage('Confirmation email sent! Please check your inbox and click the verification link.');
+        setMessage('Confirmation email sent! Please check your inbox.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to resend confirmation email');
@@ -116,263 +114,221 @@ const AuthPage: React.FC = () => {
   return (
     <div className='body_wrap sco_agency'>
       <Header />
-      <main className="page_content">
-        <section className="service pt-140 pb-140">
-          <div className="container">
-            <div className="row">
-              <div className="col-lg-6 offset-lg-3">
-                <Fade direction="up" triggerOnce duration={1000}>
-                  <div style={{
-                    padding: '40px',
-                    backgroundColor: '#fff',
-                    borderRadius: '15px',
-                    border: '1px solid #e7e8ec',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      gap: '20px',
-                      marginBottom: '30px',
-                      borderBottom: '1px solid #e7e8ec',
-                      paddingBottom: '20px'
-                    }}>
-                      <button
-                        onClick={() => {
-                          setIsLogin(true);
-                          setError('');
-                          setMessage('');
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: '12px',
-                          border: 'none',
-                          backgroundColor: isLogin ? 'var(--color-primary-two)' : 'transparent',
-                          color: isLogin ? '#fff' : 'var(--color-default)',
-                          borderRadius: '7px',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        Login
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsLogin(false);
-                          setError('');
-                          setMessage('');
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: '12px',
-                          border: 'none',
-                          backgroundColor: !isLogin ? 'var(--color-primary-two)' : 'transparent',
-                          color: !isLogin ? '#fff' : 'var(--color-default)',
-                          borderRadius: '7px',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        Sign Up
-                      </button>
-                    </div>
+      <main className="page_content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', backgroundColor: '#f5f5f5', paddingTop: '100px', paddingBottom: '60px' }}>
+        <Fade direction="up" triggerOnce duration={300} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              maxWidth: '850px',
+              height: '528px',
+              backgroundColor: '#fff',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              position: 'relative',
+              margin: '20px'
+            }}
+          >
+            {/* Left Panel - Branding */}
+            <div style={{
+              width: '38%',
+              backgroundColor: 'var(--color-primary-two)',
+              padding: '40px 33px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              color: '#fff',
+              position: 'relative',
+              backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 100%)'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '600',
+                  marginBottom: '15px',
+                  color: '#fff',
+                  lineHeight: '1.2'
+                }}>
+                  {isLogin ? 'Login' : 'Looks like you\'re new here!'}
+                </h2>
+                <p style={{
+                  fontSize: '18px',
+                  color: '#dbdbdb',
+                  lineHeight: '1.5',
+                  marginTop: '15px',
+                  fontWeight: '500'
+                }}>
+                  {isLogin
+                    ? 'Get access to your Orders, Wishlist and Recommendations'
+                    : 'Sign up with your email to get started'}
+                </p>
+              </div>
 
-                    <h2 className="title mb-30" style={{ fontSize: '28px', marginBottom: '20px' }}>
-                      {isLogin ? 'Welcome Back' : 'Create Account'}
-                    </h2>
-                    <p className="content mb-40" style={{ marginBottom: '30px', color: 'var(--color-default)' }}>
-                      {isLogin 
-                        ? 'Sign in to sync your cart across devices' 
-                        : 'Create an account to save your cart and preferences'}
-                    </p>
-
-                    {error && (
-                      <div style={{
-                        padding: '15px',
-                        backgroundColor: '#fee',
-                        border: '1px solid #fcc',
-                        borderRadius: '7px',
-                        marginBottom: '20px',
-                        color: '#c33'
-                      }}>
-                        {error}
-                        {(error.includes('Email not confirmed') || error.includes('email_not_confirmed')) && (
-                          <div style={{ marginTop: '10px' }}>
-                            <button
-                              onClick={handleResendConfirmation}
-                              disabled={resendingEmail || !email}
-                              style={{
-                                padding: '8px 15px',
-                                backgroundColor: 'var(--color-primary-two)',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: (resendingEmail || !email) ? 'not-allowed' : 'pointer',
-                                fontSize: '14px',
-                                opacity: (resendingEmail || !email) ? 0.6 : 1
-                              }}
-                            >
-                              {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {message && (
-                      <div style={{
-                        padding: '15px',
-                        backgroundColor: '#efe',
-                        border: '1px solid #cfc',
-                        borderRadius: '7px',
-                        marginBottom: '20px',
-                        color: '#3c3'
-                      }}>
-                        {message}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleSubmit}>
-                      <div style={{ marginBottom: '20px' }}>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontWeight: '600',
-                          color: 'var(--color-heading)'
-                        }}>
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                          style={{
-                            width: '100%',
-                            padding: '12px 20px',
-                            borderRadius: '7px',
-                            border: '1px solid #e7e8ec',
-                            fontSize: '16px',
-                            fontFamily: 'var(--font-body)',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
-                          onBlur={(e) => e.target.style.borderColor = '#e7e8ec'}
-                        />
-                      </div>
-
-                      <div style={{ marginBottom: '30px' }}>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontWeight: '600',
-                          color: 'var(--color-heading)'
-                        }}>
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          minLength={6}
-                          style={{
-                            width: '100%',
-                            padding: '12px 20px',
-                            borderRadius: '7px',
-                            border: '1px solid #e7e8ec',
-                            fontSize: '16px',
-                            fontFamily: 'var(--font-body)',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onFocus={(e) => e.target.style.borderColor = 'var(--color-primary-two)'}
-                          onBlur={(e) => e.target.style.borderColor = '#e7e8ec'}
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="thm-btn thm-btn--aso thm-btn--aso_yellow"
-                        style={{
-                          width: '100%',
-                          opacity: loading ? 0.6 : 1,
-                          cursor: loading ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Sign Up')}
-                      </button>
-                    </form>
-
-                    <div style={{
-                      marginTop: '30px',
-                      padding: '15px',
-                      backgroundColor: '#f6f6f8',
-                      borderRadius: '7px',
-                      fontSize: '14px',
-                      color: 'var(--color-default)',
-                      textAlign: 'center'
-                    }}>
-                      <p style={{ margin: 0 }}>
-                        {isLogin ? "Don't have an account? " : "Already have an account? "}
-                        <Link 
-                          href="/auth" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setIsLogin(!isLogin);
-                            setError('');
-                            setMessage('');
-                          }}
-                          style={{ 
-                            color: 'var(--color-primary-two)', 
-                            textDecoration: 'none',
-                            fontWeight: '600'
-                          }}
-                        >
-                          {isLogin ? 'Sign Up' : 'Login'}
-                        </Link>
-                      </p>
-                    </div>
-
-                    <div style={{
-                      marginTop: '20px',
-                      padding: '15px',
-                      backgroundColor: '#fff3cd',
-                      borderRadius: '7px',
-                      fontSize: '12px',
-                      color: '#856404',
-                      border: '1px solid #ffeaa7'
-                    }}>
-                      <strong>Note:</strong> After signing up or logging in, your cart items will automatically sync to Supabase and persist across devices.
-                    </div>
-
-                    {isLogin && (
-                      <div style={{
-                        marginTop: '15px',
-                        padding: '15px',
-                        backgroundColor: '#e7f3ff',
-                        borderRadius: '7px',
-                        fontSize: '12px',
-                        color: '#004085',
-                        border: '1px solid #b3d9ff'
-                      }}>
-                        <strong>Email Confirmation Issue?</strong> If you see "Email not confirmed", you can either:
-                        <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
-                          <li>Check your email for the verification link</li>
-                          <li>Click "Resend Confirmation Email" above</li>
-                          <li>Or disable email confirmation in Supabase Dashboard → Authentication → Settings (for testing)</li>
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </Fade>
+              <div style={{
+                textAlign: 'center',
+                marginTop: 'auto',
+                marginBottom: '30px'
+              }}>
+                {/* Using a font-awesome icon or similar large graphic */}
+                <i className={`fa-duotone ${isLogin ? 'fa-bag-shopping' : 'fa-rocket-launch'}`} style={{
+                  fontSize: '120px',
+                  color: 'rgba(255,255,255,0.95)',
+                  filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
+                }}></i>
               </div>
             </div>
+
+            {/* Right Panel - Form */}
+            <div style={{
+              flex: 1,
+              padding: '56px 35px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#fff',
+              position: 'relative',
+              overflowY: 'auto'
+            }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+                <div style={{ marginBottom: '24px', position: 'relative' }}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="Enter Email"
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      borderBottom: '1px solid #e0e0e0',
+                      padding: '10px 0',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-bottom-color 0.2s',
+                      background: 'transparent'
+                    }}
+                    onFocus={(e) => e.target.style.borderBottomColor = 'var(--color-primary-two)'}
+                    onBlur={(e) => e.target.style.borderBottomColor = '#e0e0e0'}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '35px', position: 'relative' }}>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="Enter Password"
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      borderBottom: '1px solid #e0e0e0',
+                      padding: '10px 0',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-bottom-color 0.2s',
+                      background: 'transparent'
+                    }}
+                    onFocus={(e) => e.target.style.borderBottomColor = 'var(--color-primary-two)'}
+                    onBlur={(e) => e.target.style.borderBottomColor = '#e0e0e0'}
+                  />
+                  {isLogin && (
+                    <a href="#" style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '10px',
+                      fontSize: '14px',
+                      color: 'var(--color-primary-two)',
+                      textDecoration: 'none',
+                      fontWeight: '600'
+                    }}>
+                      Forgot?
+                    </a>
+                  )}
+                </div>
+
+                <p style={{ fontSize: '12px', color: '#878787', marginTop: '-10px', marginBottom: '20px' }}>
+                  By continuing, you agree to our <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none' }}>Terms of Use</a> and <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none' }}>Privacy Policy</a>.
+                </p>
+
+                {error && (
+                  <div style={{ marginBottom: '15px', fontSize: '12px', color: '#ff6161', fontWeight: '500' }}>
+                    {error}
+                    {(error.includes('Email not confirmed') || error.includes('email_not_confirmed')) && (
+                      <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        disabled={resendingEmail || !email}
+                        style={{
+                          display: 'block',
+                          marginTop: '5px',
+                          color: 'var(--color-primary-two)',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {message && (
+                  <div style={{ marginBottom: '15px', fontSize: '13px', color: '#26a541', fontWeight: '500' }}>
+                    {message}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#fb641b',
+                    background: 'var(--color-primary-two)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '2px',
+                    height: '48px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    marginBottom: '15px',
+                    opacity: loading ? 0.7 : 1
+                  }}
+                >
+                  {loading ? 'Processing...' : (isLogin ? 'Login' : 'Signup')}
+                </button>
+
+                <div style={{ marginTop: 'auto', textAlign: 'center', paddingBottom: '20px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setError('');
+                      setMessage('');
+                    }}
+                    style={{
+                      color: 'var(--color-primary-two)',
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isLogin ? "New to Kisentra? Create an account" : "Existing User? Log in"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </section>
+        </Fade>
       </main>
       <Footer />
       <Scrollbar />

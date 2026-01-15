@@ -25,6 +25,10 @@ export const getCartFromSupabase = async (userId: string): Promise<CartItem[]> =
             .eq('user_id', userId);
 
         if (error) {
+            // Ignore abort errors
+            if (error.message?.includes('AbortError') || error.message?.includes('signal is aborted')) {
+                return [];
+            }
             console.error('Error fetching cart from Supabase:', error);
             return [];
         }
@@ -63,7 +67,10 @@ export const getCartFromSupabase = async (userId: string): Promise<CartItem[]> =
                 };
             });
 
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('signal is aborted')) {
+            return [];
+        }
         console.error('Error in getCartFromSupabase:', error);
         return [];
     }
@@ -88,7 +95,10 @@ export const syncCartItemToSupabase = async (userId: string, product: Product, q
             console.error('Invalid or expired session, cannot sync cart:', sessionError);
             return;
         }
-    } catch (sessionCheckError) {
+    } catch (sessionCheckError: any) {
+        if (sessionCheckError.name === 'AbortError' || sessionCheckError.message?.includes('AbortError') || sessionCheckError.message?.includes('signal is aborted')) {
+            return;
+        }
         console.error('Error checking session:', sessionCheckError);
         return;
     }
@@ -112,7 +122,7 @@ export const syncCartItemToSupabase = async (userId: string, product: Product, q
             if (error || !realProduct) {
                 console.log(`Product not found in Supabase (slug: ${product.slug}), creating it...`);
                 const created = await saveProductToSupabase(product);
-                
+
                 if (!created) {
                     console.error(`Failed to create product in Supabase: ${product.slug}`);
                     return;
@@ -144,6 +154,9 @@ export const syncCartItemToSupabase = async (userId: string, product: Product, q
             .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no rows
 
         if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+            if (checkError.message?.includes('AbortError') || checkError.message?.includes('signal is aborted')) {
+                return;
+            }
             console.error('Error checking existing cart item:', checkError);
             return;
         }
@@ -182,7 +195,7 @@ export const syncCartItemToSupabase = async (userId: string, product: Product, q
                     created_at: now,
                     updated_at: now
                 }).select();
-                
+
                 if (insertError) {
                     console.error('Error inserting cart item:', insertError);
                     console.error('Insert data attempted:', {
@@ -205,9 +218,12 @@ export const syncCartItemToSupabase = async (userId: string, product: Product, q
                 }
             }
         }
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('AbortError') || error.message?.includes('signal is aborted')) {
+            return;
+        }
         console.error('Error syncing cart item to Supabase:', error);
-        throw error; // Re-throw to allow caller to handle
+        // throw error; // Don't rethrow to keep app stable 
     }
 };
 

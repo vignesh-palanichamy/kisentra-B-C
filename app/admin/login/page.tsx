@@ -16,7 +16,7 @@ const AdminLoginPage: React.FC = () => {
   useEffect(() => {
     // Wait for auth check to complete
     if (isLoading) return;
-    
+
     // If already authenticated, redirect to dashboard
     if (isAuthenticated) {
       router.push('/admin/dashboard');

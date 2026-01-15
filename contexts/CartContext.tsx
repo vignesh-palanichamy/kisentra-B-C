@@ -64,9 +64,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize cart and auth listeners
   useEffect(() => {
+    let isMounted = true;
+
     const initializeCart = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.warn("Supabase session check warning:", error.message);
+        }
+
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
@@ -76,7 +85,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (savedCart) {
             try {
               const localCart = JSON.parse(savedCart);
-              if (localCart.length > 0) {
+              if (Array.isArray(localCart) && localCart.length > 0) {
                 await mergeLocalCart(currentUser.id, localCart);
                 localStorage.removeItem('cart');
               }
@@ -88,15 +97,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Load from Supabase
           try {
             const remoteCart = await getCartFromSupabase(currentUser.id);
-            // Only set cart if we got valid data (not empty array from error)
-            if (Array.isArray(remoteCart)) {
+            if (isMounted && Array.isArray(remoteCart)) {
               setCart(remoteCart);
             }
           } catch (error) {
             console.error('Error loading cart from Supabase:', error);
             // Fallback to localStorage if Supabase fails
             const savedCart = localStorage.getItem('cart');
-            if (savedCart) {
+            if (isMounted && savedCart) {
               try {
                 setCart(JSON.parse(savedCart));
               } catch (e) {
@@ -107,7 +115,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           // Load from local storage for non-authenticated users
           const savedCart = localStorage.getItem('cart');
-          if (savedCart) {
+          if (isMounted && savedCart) {
             try {
               const parsedCart = JSON.parse(savedCart);
               if (Array.isArray(parsedCart)) {
@@ -118,11 +126,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+          // Ignore abort errors from Supabase client
+          return;
+        }
         console.error('Error initializing cart:', error);
         // Fallback to localStorage
         const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
+        if (isMounted && savedCart) {
           try {
             const parsedCart = JSON.parse(savedCart);
             if (Array.isArray(parsedCart)) {
@@ -172,6 +184,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);

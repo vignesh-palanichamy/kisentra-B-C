@@ -6,6 +6,7 @@ import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
 import { getProducts, getProductsFromSupabaseAsync, Product } from '@/api/products';
+import { getCategories, Category } from '@/api/categories';
 import ProductCard from '@/components/ProductCard/ProductCard';
 import { Fade } from 'react-awesome-reveal';
 
@@ -19,13 +20,24 @@ const ProductsPage: React.FC = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [minRating, setMinRating] = useState<number>(0);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Sync selectedCategory with URL param
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    } else {
+      setSelectedCategory('All');
+    }
+  }, [categoryParam]);
+
+  // Load products only on client side to avoid hydration mismatch
   // Load products only on client side to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true);
     setProducts(getProducts());
-    
+
     // Also try to load from Supabase in background
     getProductsFromSupabaseAsync().then((supabaseProducts) => {
       if (supabaseProducts && supabaseProducts.length > 0) {
@@ -34,7 +46,10 @@ const ProductsPage: React.FC = () => {
         localStorage.setItem('adminProducts', JSON.stringify(supabaseProducts));
       }
     });
-    
+
+    // Fetch official categories
+    getCategories().then(cats => setCategoriesList(cats));
+
     const handleStorageChange = () => {
       setProducts(getProducts());
     };
@@ -46,11 +61,9 @@ const ProductsPage: React.FC = () => {
     };
   }, []);
 
-  const categories = isMounted 
-    ? ['All', ...Array.from(new Set(products.map(p => p.category)))]
-    : ['All'];
-  
-  const maxPrice = isMounted 
+  const categories = ['All', ...categoriesList.map(c => c.name)];
+
+  const maxPrice = isMounted
     ? Math.max(...products.map(p => p.price), 0) || 5000
     : 5000;
 
@@ -64,30 +77,30 @@ const ProductsPage: React.FC = () => {
   // Enhanced filtering logic - client-side only
   const filteredProducts = isMounted
     ? products.filter((product) => {
-        // Visibility
-        if (product.visible === false) return false;
-        
-        // Category filter
-        if (selectedCategory !== 'All' && product.category !== selectedCategory) return false;
-        
-        // Search query
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          if (
-            !product.title.toLowerCase().includes(query) &&
-            !product.description.toLowerCase().includes(query) &&
-            !product.category.toLowerCase().includes(query)
-          ) return false;
-        }
-        
-        // Price range
-        if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
-        
-        // Rating filter
-        if (minRating > 0 && (!product.rating || product.rating < minRating)) return false;
-        
-        return true;
-      })
+      // Visibility
+      if (product.visible === false) return false;
+
+      // Category filter
+      if (selectedCategory !== 'All' && product.category !== selectedCategory) return false;
+
+      // Search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (
+          !product.title.toLowerCase().includes(query) &&
+          !product.description.toLowerCase().includes(query) &&
+          !product.category.toLowerCase().includes(query)
+        ) return false;
+      }
+
+      // Price range
+      if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
+
+      // Rating filter
+      if (minRating > 0 && (!product.rating || product.rating < minRating)) return false;
+
+      return true;
+    })
     : [];
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {

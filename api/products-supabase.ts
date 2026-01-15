@@ -28,7 +28,11 @@ export const getProductsFromSupabase = async (): Promise<Product[]> => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching products from Supabase:', error);
+      // Ignore abort errors
+      if (error.message?.includes('aborted') || error.code === '20') return Products; // 20 is sometimes code for abort/cancel
+
+      console.error('Error fetching products from Supabase:', JSON.stringify(error, null, 2));
+
       // Fallback to localStorage
       if (typeof window !== 'undefined') {
         const savedProducts = localStorage.getItem('adminProducts');
@@ -61,7 +65,10 @@ export const getProductsFromSupabase = async (): Promise<Product[]> => {
       tags: item.tags || [],
       visible: item.is_active !== false,
     }));
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+      return Products;
+    }
     console.error('Error in getProductsFromSupabase:', error);
     return Products;
   }
@@ -109,6 +116,9 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (checkError.message?.includes('AbortError') || checkError.message?.includes('signal is aborted')) {
+        return false;
+      }
       console.error('Error checking existing product:', checkError);
       return false;
     }

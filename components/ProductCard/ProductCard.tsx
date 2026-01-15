@@ -17,25 +17,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   // Safely get the main image with fallback
-  const getMainImage = () => {
+  const getMainImage = (): string | null => {
     if (!product.images || product.images.length === 0) {
-      return '/images/placeholder.jpg'; // Fallback placeholder
+      return null;
     }
 
     const firstImage = product.images[0];
     if (typeof firstImage === 'string') {
-      return firstImage;
+      return firstImage; // Base64 or URL
     }
 
     // Handle StaticImageData or object with src property
     if (firstImage && typeof firstImage === 'object') {
-      return (firstImage as any).src || firstImage;
+      return (firstImage as any).src || null;
     }
 
-    return '/images/placeholder.jpg'; // Final fallback
+    return null;
   };
 
-  const mainImage = getMainImage();
+  const [imageSrc, setImageSrc] = useState<string | null>(getMainImage());
+  const [imgError, setImgError] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -99,18 +100,47 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Product Image */}
           <Link href={`/products/${product.slug}`} style={{ textDecoration: 'none', display: 'block', position: 'relative' }}>
-            <div className="product-card-image" style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden' }}>
-              <Image
-                src={mainImage}
-                alt={product.title}
-                fill
-                style={{
-                  objectFit: 'contain',
-                  padding: '24px',
-                  transition: 'transform 0.5s ease'
-                }}
-                className={isHovered ? 'scale-110' : ''}
-              />
+            <div className="product-card-image" style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden', backgroundColor: '#f0f0f0' }}>
+              {!imgError && imageSrc && imageSrc.length > 50 ? (
+                <img
+                  src={imageSrc}
+                  alt={product.title}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    transition: 'transform 0.5s ease',
+                    transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+                  }}
+                  onError={() => {
+                    console.log('Image load error for:', product.title);
+                    setImgError(true);
+                  }}
+                />
+              ) : (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  color: '#999',
+                  backgroundColor: '#eee'
+                }}>
+                  <i className="fas fa-image" style={{ fontSize: '48px', marginBottom: '10px' }}></i>
+                  <span style={{ fontSize: '14px' }}>
+                    {imageSrc && imageSrc.length <= 50 ? 'Corrupted' : 'No Image'}
+                  </span>
+                </div>
+              )}
+
               {/* Discount Badge */}
               {discountPercentage > 0 && (
                 <div style={{

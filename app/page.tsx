@@ -7,6 +7,7 @@ import Scrollbar from '../components/scrollbar/scrollbar';
 import ProductCarousel from '../components/ProductCarousel/ProductCarousel';
 import ProductCard from '../components/ProductCard/ProductCard';
 import { getProducts, Product } from '@/api/products';
+import { getCategories, Category } from '@/api/categories';
 import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
 
@@ -54,9 +55,11 @@ const HomePage = () => {
   }, [isMounted]);
 
   // Amazon-style product categorization
-  const categories = isMounted
-    ? Array.from(new Set(products.map(p => p.category))).slice(0, 12)
-    : [];
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    getCategories().then(setCategories);
+  }, []);
 
   const todaysDeals = isMounted
     ? products.filter(p => p.visible !== false && p.originalPrice && (p.originalPrice - p.price) > 0)
@@ -99,58 +102,70 @@ const HomePage = () => {
         <Header />
         <main className="page_content" style={{ paddingTop: '160px' }}>
 
-          {/* Category Bar - Modern Pills */}
+          {/* Category Bar - Flipkart Style */}
           {categories.length > 0 && (
-            <section style={{ marginBottom: '50px', marginTop: '20px' }}>
+            <section style={{ marginBottom: '30px', marginTop: '20px', backgroundColor: '#fff', padding: '15px 0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="container">
                 <div style={{
                   display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: '12px'
+                  justifyContent: 'center', // Centered for cleaner look, or 'flex-start' if scrollable
+                  gap: '40px',
+                  overflowX: 'auto',
+                  paddingBottom: '10px'
                 }}>
-                  {categories.map((category, index) => (
+                  {categories.map((category) => (
                     <Link
-                      key={category}
-                      href={`/products?category=${encodeURIComponent(category)}`}
-                      className="category-pill"
+                      key={category.id || category.slug}
+                      href={`/products?category=${encodeURIComponent(category.name)}`}
+                      className="category-item"
                       style={{
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        padding: '10px 20px',
-                        backgroundColor: 'var(--color-white)',
-                        borderRadius: '30px',
                         textDecoration: 'none',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        border: '1px solid #eee',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        cursor: 'pointer'
+                        minWidth: '80px',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
-                        e.currentTarget.style.borderColor = 'var(--color-primary-two)';
+                        e.currentTarget.style.transform = 'translateY(-5px)';
+                        const title = e.currentTarget.querySelector('.cat-title') as HTMLElement;
+                        if (title) title.style.color = 'var(--color-primary-two)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-                        e.currentTarget.style.borderColor = '#eee';
+                        const title = e.currentTarget.querySelector('.cat-title') as HTMLElement;
+                        if (title) title.style.color = 'var(--color-heading)';
                       }}
                     >
-                      <span style={{
-                        fontSize: '18px',
-                        marginRight: '10px',
-                        lineHeight: 1
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        marginBottom: '10px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#f1f3f6'
                       }}>
-                        {['📱', '👗', '👟', '🏠', '💄', '🧸', '🚲'][index % 7]}
-                      </span>
-                      <span style={{
+                        {category.image_url ? (
+                          <img src={category.image_url} alt={category.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          // Default icons based on name or generic
+                          <span style={{ fontSize: '24px' }}>
+                            {['📱', '👗', '👟', '🏠', '💄', '🧸', '🚲'][Math.abs(category.name.length) % 7]}
+                          </span>
+                        )}
+                      </div>
+                      <span className="cat-title" style={{
                         fontSize: '14px',
                         fontWeight: '600',
                         color: 'var(--color-heading)',
-                        whiteSpace: 'nowrap'
+                        textAlign: 'center',
+                        lineHeight: '1.2'
                       }}>
-                        {category}
+                        {category.name}
                       </span>
                     </Link>
                   ))}
