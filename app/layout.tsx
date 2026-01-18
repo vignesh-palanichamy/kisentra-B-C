@@ -12,6 +12,8 @@ import "../styles/ecommerce.css";
 import "../styles/premium-animations.css";
 import { CartProvider } from "../contexts/CartContext";
 import { UserProvider } from "../contexts/UserContext";
+import WhatsAppFloatingButton from "../components/WhatsAppFloatingButton/WhatsAppFloatingButton";
+import MailFloatingButton from "../components/MailFloatingButton/MailFloatingButton";
 
 export const metadata: Metadata = {
   title: "Innomax - Technology & IT Startup Next Js Template",
@@ -37,6 +39,8 @@ export default function RootLayout({
         <UserProvider>
           <CartProvider>
             {children}
+            <WhatsAppFloatingButton />
+            <MailFloatingButton />
           </CartProvider>
         </UserProvider>
       </body>
