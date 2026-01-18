@@ -117,10 +117,10 @@ const Header: React.FC = () => {
         {/* Top bar */}
         <div className="header-top">
           <span>
-            Get 15% off on all annual plans until September 30! Join Texpo as we transform SEO 🚀
+            🎉 Free Shipping on Orders Above ₹499! Premium Water Bottles & Tiffin Boxes for Your Daily Needs
           </span>
           <span>
-            <Link href="/">Learn more</Link>
+            <Link href="/products">Shop Now</Link>
             <i className="far fa-angle-right" />
           </span>
           <div className="header-shape">
