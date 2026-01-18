@@ -33,7 +33,7 @@ const Footer: React.FC<FooterProps> = () => {
               </div>
               <div className="xb-item--holder">
                 <p className="xb-item--content">Write to us</p>
-                <h4 className="xb-item--title">innomax@gmail.com</h4>
+                <h4 className="xb-item--title">sales@kisentraglobal.com</h4>
               </div>
             </div>
             <div className="info-item ul_li">
@@ -43,8 +43,8 @@ const Footer: React.FC<FooterProps> = () => {
                 </span>
               </div>
               <div className="xb-item--holder">
-                <p className="xb-item--content">Call Us (USA)</p>
-                <h4 className="xb-item--title">+(1) 1230 452 8597</h4>
+                <p className="xb-item--content">Call Us</p>
+                <h4 className="xb-item--title">+91 93929 38283</h4>
               </div>
             </div>
             <div className="info-item ul_li">
@@ -55,7 +55,7 @@ const Footer: React.FC<FooterProps> = () => {
               </div>
               <div className="xb-item--holder">
                 <p className="xb-item--content">Our Office</p>
-                <h4 className="xb-item--title">Waterloo, Park, Australia</h4>
+                <h4 className="xb-item--title">Coimbatore, Tamil Nadu, India</h4>
               </div>
             </div>
           </div>
