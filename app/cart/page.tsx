@@ -79,8 +79,8 @@ const CartPage: React.FC = () => {
                           textDecoration: 'none',
                           transition: 'color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
                           Home
                         </Link>
                       </li>
@@ -91,8 +91,8 @@ const CartPage: React.FC = () => {
                           textDecoration: 'none',
                           transition: 'color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary-two)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-default)'}>
                           Shop
                         </Link>
                       </li>

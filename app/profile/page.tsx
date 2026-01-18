@@ -10,18 +10,209 @@ import Scrollbar from '@/components/scrollbar/scrollbar';
 import { Fade } from 'react-awesome-reveal';
 import { useCart } from '@/contexts/CartContext';
 import { useUser } from '@/contexts/UserContext';
+import { Address } from '@/types';
 
 const ProfilePage: React.FC = () => {
     const router = useRouter();
     const { user, isLoading, signOut } = useUser();
-    const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'settings' | 'cart'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'settings' | 'cart' | 'addresses'>('info');
     const { orders, cart, addToCart } = useCart();
+
+    // Address State
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [loadingAddresses, setLoadingAddresses] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoading && !user) {
             router.push('/auth');
         }
     }, [isLoading, user, router]);
+
+    // Fetch addresses when tab changes to 'addresses' or 'info'
+    useEffect(() => {
+        if ((activeTab === 'addresses' || activeTab === 'info') && user) {
+            fetchAddresses();
+        }
+    }, [activeTab, user]);
+
+    // Add Address Form State
+    const [isAddingAddress, setIsAddingAddress] = useState(false);
+    const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+    const [addAddressError, setAddAddressError] = useState('');
+    const [addAddressLoading, setAddAddressLoading] = useState(false);
+    const [addressForm, setAddressForm] = useState({
+        full_name: '',
+        phone: '',
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        state: '',
+        pincode: '',
+    });
+
+    const handleAddressFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (name === 'phone' || name === 'pincode') {
+            if (!/^\d*$/.test(value)) return;
+        }
+        setAddressForm({ ...addressForm, [name]: value });
+    };
+
+    const validateAddressForm = () => {
+        if (!/^\d{10}$/.test(addressForm.phone)) {
+            setAddAddressError('Phone number must be exactly 10 digits.');
+            return false;
+        }
+        if (!/^\d{6}$/.test(addressForm.pincode)) {
+            setAddAddressError('Pincode must be exactly 6 digits.');
+            return false;
+        }
+        if (addressForm.full_name.trim().length < 3) {
+            setAddAddressError('Please enter a valid full name.');
+            return false;
+        }
+        return true;
+    };
+
+    const handleEditClick = (address: Address) => {
+        setAddressForm({
+            full_name: address.full_name,
+            phone: address.phone,
+            address_line1: address.address_line1,
+            address_line2: address.address_line2 || '',
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+        });
+        setEditingAddressId(address.id);
+        setIsAddingAddress(true);
+    };
+
+    const handleCloseForm = () => {
+        setIsAddingAddress(false);
+        setEditingAddressId(null);
+        setAddressForm({
+            full_name: '',
+            phone: '',
+            address_line1: '',
+            address_line2: '',
+            city: '',
+            state: '',
+            pincode: '',
+        });
+        setAddAddressError('');
+    };
+
+    const handleAddressSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddAddressError('');
+
+        if (!validateAddressForm()) return;
+
+        setAddAddressLoading(true);
+
+        try {
+            if (editingAddressId) {
+                // Update Existing Address
+                const { error: updateError } = await supabase
+                    .from('addresses')
+                    .update({
+                        ...addressForm
+                    })
+                    .eq('id', editingAddressId)
+                    .eq('user_id', user!.id);
+
+                if (updateError) throw updateError;
+            } else {
+                // Insert New Address
+                const check = await supabase
+                    .from('addresses')
+                    .select('id')
+                    .eq('user_id', user!.id)
+                    .limit(1);
+
+                const isFirst = !check.data || check.data.length === 0;
+
+                const { error: insertError } = await supabase
+                    .from('addresses')
+                    .insert({
+                        user_id: user!.id,
+                        ...addressForm,
+                        is_default: isFirst
+                    });
+
+                if (insertError) throw insertError;
+            }
+
+            // Success: Reset form and go back to list
+            handleCloseForm();
+            fetchAddresses(); // Refresh list
+
+        } catch (err: any) {
+            setAddAddressError(err.message || 'Failed to save address');
+        } finally {
+            setAddAddressLoading(false);
+        }
+    };
+
+    const fetchAddresses = async () => {
+        setLoadingAddresses(true);
+        const { data, error } = await supabase
+            .from('addresses')
+            .select('*')
+            .eq('user_id', user!.id)
+            .order('is_default', { ascending: false })
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching addresses:', error);
+        } else {
+            setAddresses(data || []);
+        }
+        setLoadingAddresses(false);
+    };
+
+    const handleSetDefault = async (addressId: string) => {
+        if (!user) return;
+        setActionLoading(addressId);
+
+        // 1. Unset current default
+        await supabase
+            .from('addresses')
+            .update({ is_default: false })
+            .eq('user_id', user.id);
+
+        // 2. Set new default
+        const { error } = await supabase
+            .from('addresses')
+            .update({ is_default: true })
+            .eq('id', addressId);
+
+        if (error) {
+            alert('Failed to update default address');
+        } else {
+            fetchAddresses();
+        }
+        setActionLoading(null);
+    };
+
+    const handleDelete = async (addressId: string) => {
+        if (!confirm('Are you sure you want to delete this address?')) return;
+
+        setActionLoading(addressId);
+        const { error } = await supabase
+            .from('addresses')
+            .delete()
+            .eq('id', addressId);
+
+        if (error) {
+            alert(error.message);
+        } else {
+            fetchAddresses();
+        }
+        setActionLoading(null);
+    };
 
     const handleLogout = async () => {
         await signOut();
@@ -84,6 +275,12 @@ const ProfilePage: React.FC = () => {
                                             <i className="far fa-shopping-cart"></i> <span>My Cart</span>
                                         </button>
                                         <button
+                                            onClick={() => setActiveTab('addresses')}
+                                            className={`nav-item ${activeTab === 'addresses' ? 'active' : ''}`}
+                                        >
+                                            <i className="far fa-map-marker-alt"></i> <span>My Addresses</span>
+                                        </button>
+                                        <button
                                             onClick={() => setActiveTab('settings')}
                                             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
                                         >
@@ -122,15 +319,6 @@ const ProfilePage: React.FC = () => {
                                                 </div>
                                                 <div className="info-card">
                                                     <div className="icon-wrapper">
-                                                        <i className="far fa-id-badge"></i>
-                                                    </div>
-                                                    <div className="info-details">
-                                                        <label>User ID</label>
-                                                        <div className="value monospace">{user.id}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="info-card">
-                                                    <div className="icon-wrapper">
                                                         <i className="far fa-calendar-alt"></i>
                                                     </div>
                                                     <div className="info-details">
@@ -145,6 +333,29 @@ const ProfilePage: React.FC = () => {
                                                     <div className="info-details">
                                                         <label>Last Login</label>
                                                         <div className="value">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'N/A'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="info-card">
+                                                    <div className="icon-wrapper">
+                                                        <i className="far fa-map-marker-alt"></i>
+                                                    </div>
+                                                    <div className="info-details">
+                                                        <label>Default Address</label>
+                                                        <div className="value" style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                                                            {addresses.length > 0 ? (
+                                                                (() => {
+                                                                    const addr = addresses.find(a => a.is_default) || addresses[0];
+                                                                    return (
+                                                                        <>
+                                                                            {addr.address_line1}, {addr.city}<br />
+                                                                            {addr.state} - {addr.pincode}
+                                                                        </>
+                                                                    );
+                                                                })()
+                                                            ) : (
+                                                                <span style={{ color: '#94a3b8' }}>No address set</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -281,6 +492,207 @@ const ProfilePage: React.FC = () => {
                                                             Proceed to Checkout <i className="far fa-arrow-right ms-2"></i>
                                                         </button>
                                                     </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'addresses' && (
+                                        <div className="content-section animation-fade">
+                                            {!isAddingAddress ? (
+                                                <>
+                                                    <div className="section-header">
+                                                        <h3>My Addresses</h3>
+                                                        <p>Manage your delivery addresses</p>
+                                                    </div>
+                                                    <div className="text-end mb-4">
+                                                        <button
+                                                            onClick={() => setIsAddingAddress(true)}
+                                                            className="thm-btn thm-btn--aso thm-btn--header-black"
+                                                        >
+                                                            + Add New Address
+                                                        </button>
+                                                    </div>
+
+                                                    {loadingAddresses ? (
+                                                        <div style={{ textAlign: 'center', padding: '40px' }}><i className="fas fa-circle-notch fa-spin fa-2x"></i></div>
+                                                    ) : addresses.length === 0 ? (
+                                                        <div className="empty-state">
+                                                            <div className="empty-icon">
+                                                                <i className="fas fa-map-marker-alt"></i>
+                                                            </div>
+                                                            <h4>No Addresses Found</h4>
+                                                            <p>Add a new address to speed up checkout.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="address-grid">
+                                                            {addresses.map((addr) => (
+                                                                <div key={addr.id} className={`address-card ${addr.is_default ? 'default-card' : ''}`}>
+                                                                    <div className="card-header">
+                                                                        <div className="badge-group">
+                                                                            <span className="addr-type">Home</span>
+                                                                            {addr.is_default && <span className="default-badge">Default</span>}
+                                                                        </div>
+                                                                        <div className="actions">
+                                                                            <button
+                                                                                onClick={() => handleEditClick(addr)}
+                                                                                className="action-btn text-blue"
+                                                                                title="Edit Address"
+                                                                            >
+                                                                                <i className="fas fa-edit"></i>
+                                                                            </button>
+                                                                            {!addr.is_default && (
+                                                                                <button
+                                                                                    onClick={() => handleSetDefault(addr.id)}
+                                                                                    disabled={actionLoading === addr.id}
+                                                                                    className="action-btn text-blue"
+                                                                                    title="Set as Default"
+                                                                                >
+                                                                                    {actionLoading === addr.id ? '...' : <i className="fas fa-check-circle"></i>}
+                                                                                </button>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={() => handleDelete(addr.id)}
+                                                                                className="action-btn text-red"
+                                                                                title="Delete Address"
+                                                                            >
+                                                                                <i className="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="card-body">
+                                                                        <h4 className="name">{addr.full_name}</h4>
+                                                                        <p className="phone">{addr.phone}</p>
+                                                                        <div className="address-text">
+                                                                            {addr.address_line1}, <br />
+                                                                            {addr.address_line2 && <>{addr.address_line2}<br /></>}
+                                                                            {addr.city}, {addr.state} - <strong>{addr.pincode}</strong>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="add-address-form-container animation-fade">
+                                                    <div className="section-header d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h3>{editingAddressId ? 'Edit Address' : 'Add New Address'}</h3>
+                                                            <p>{editingAddressId ? 'Update your delivery details' : 'Enter your delivery details below'}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={handleCloseForm}
+                                                            className="btn-close-custom"
+                                                        >
+                                                            <i className="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+
+                                                    {addAddressError && (
+                                                        <div className="alert alert-danger mb-4">
+                                                            <i className="fas fa-exclamation-circle me-2"></i> {addAddressError}
+                                                        </div>
+                                                    )}
+
+                                                    <form onSubmit={handleAddressSubmit}>
+                                                        <div className="form-group mb-3">
+                                                            <label>Full Name</label>
+                                                            <input
+                                                                type="text"
+                                                                name="full_name"
+                                                                value={addressForm.full_name}
+                                                                onChange={handleAddressFormChange}
+                                                                className="form-control-custom"
+                                                                placeholder="John Doe"
+                                                            />
+                                                        </div>
+                                                        <div className="form-group mb-3">
+                                                            <label>Phone Number</label>
+                                                            <input
+                                                                type="tel"
+                                                                name="phone"
+                                                                value={addressForm.phone}
+                                                                onChange={handleAddressFormChange}
+                                                                className="form-control-custom"
+                                                                placeholder="10 digit number"
+                                                                maxLength={10}
+                                                            />
+                                                        </div>
+                                                        <div className="row">
+                                                            <div className="col-md-6 mb-3">
+                                                                <label>Pincode</label>
+                                                                <input
+                                                                    type="text"
+                                                                    name="pincode"
+                                                                    value={addressForm.pincode}
+                                                                    onChange={handleAddressFormChange}
+                                                                    className="form-control-custom"
+                                                                    placeholder="6 digit code"
+                                                                    maxLength={6}
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-6 mb-3">
+                                                                <label>State</label>
+                                                                <input
+                                                                    type="text"
+                                                                    name="state"
+                                                                    value={addressForm.state}
+                                                                    onChange={handleAddressFormChange}
+                                                                    className="form-control-custom"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label>City</label>
+                                                            <input
+                                                                type="text"
+                                                                name="city"
+                                                                value={addressForm.city}
+                                                                onChange={handleAddressFormChange}
+                                                                className="form-control-custom"
+                                                            />
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label>Address Line 1</label>
+                                                            <input
+                                                                type="text"
+                                                                name="address_line1"
+                                                                value={addressForm.address_line1}
+                                                                onChange={handleAddressFormChange}
+                                                                className="form-control-custom"
+                                                                placeholder="House No., Building Name"
+                                                            />
+                                                        </div>
+                                                        <div className="mb-4">
+                                                            <label>Address Line 2 (Optional)</label>
+                                                            <input
+                                                                type="text"
+                                                                name="address_line2"
+                                                                value={addressForm.address_line2}
+                                                                onChange={handleAddressFormChange}
+                                                                className="form-control-custom"
+                                                                placeholder="Road Name, Area, Colony"
+                                                            />
+                                                        </div>
+                                                        <div className="d-flex gap-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCloseForm}
+                                                                className="thm-btn thm-btn--border flex-grow-1"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                type="submit"
+                                                                disabled={addAddressLoading}
+                                                                className="thm-btn thm-btn--aso thm-btn--header-black flex-grow-1"
+                                                            >
+                                                                {addAddressLoading ? 'Saving...' : 'Save Address'}
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             )}
                                         </div>
@@ -592,6 +1004,137 @@ const ProfilePage: React.FC = () => {
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Address Styles for Profile Tab */
+                .address-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 20px;
+                }
+                .address-card {
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 24px;
+                    position: relative;
+                    transition: all 0.2s ease;
+                }
+                .address-card:hover {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+                }
+                .default-card {
+                    border: 2px solid #3b82f6;
+                    background-color: #eff6ff;
+                }
+                .card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 16px;
+                }
+                .badge-group {
+                    display: flex;
+                    gap: 8px;
+                }
+                .addr-type {
+                    background: #f1f5f9;
+                    color: #64748b;
+                    font-size: 11px;
+                    text-transform: uppercase;
+                    font-weight: 700;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    letter-spacing: 0.5px;
+                }
+                .default-badge {
+                    background: #dbeafe;
+                    color: #1e40af;
+                    font-size: 11px;
+                    text-transform: uppercase;
+                    font-weight: 700;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    letter-spacing: 0.5px;
+                }
+                .actions {
+                    display: flex;
+                    gap: 12px;
+                }
+                .action-btn {
+                    background: none;
+                    border: none;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    padding: 0;
+                    transition: color 0.2s;
+                }
+                .text-blue { color: #2563eb; }
+                .text-blue:hover { color: #1e40af; text-decoration: underline; }
+                .text-red { color: #ef4444; }
+                .text-red:hover { color: #b91c1c; }
+                .card-body .name {
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin-bottom: 4px;
+                }
+                .card-body .phone {
+                    font-size: 14px;
+                    color: #64748b;
+                    margin-bottom: 12px;
+                    font-weight: 500;
+                }
+                .address-text {
+                    font-size: 15px;
+                    line-height: 1.5;
+                    color: #334155;
+                }
+
+                /* Add Address Form Styles */
+                .form-control-custom {
+                    width: 100%;
+                    padding: 12px 16px;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    font-size: 15px;
+                    color: #1e293b;
+                    transition: all 0.2s;
+                    background: #f8fafc;
+                }
+                .form-control-custom:focus {
+                    outline: none;
+                    background: #fff;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+                .btn-close-custom {
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    font-size: 20px;
+                    cursor: pointer;
+                    transition: color 0.2s;
+                }
+                .btn-close-custom:hover {
+                    color: #64748b;
+                }
+                .alert-danger {
+                    color: #b91c1c;
+                    background-color: #fef2f2;
+                    border: 1px solid #fecaca;
+                    padding: 12px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                }
+                form label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 6px;
                 }
             `}</style>
         </div>

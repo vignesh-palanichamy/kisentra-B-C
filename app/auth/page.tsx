@@ -388,9 +388,9 @@ const AuthPage: React.FC = () => {
                     </div>
                     {isLogin && (
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                        <a href="#" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
+                        <Link href="/forgot-password" style={{ color: 'var(--color-primary-two)', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
                           Forgot password?
-                        </a>
+                        </Link>
                       </div>
                     )}
                   </div>

@@ -1,621 +1,462 @@
 'use client';
 
-import React, { Fragment, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import Header from '@/components/header/Header';
 import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
-import { useCart } from '@/contexts/CartContext';
-import { Fade } from 'react-awesome-reveal';
 import Link from 'next/link';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/contexts/UserContext';
+import { useCart } from '@/contexts/CartContext';
+import { Address } from '@/types';
+import { Fade } from 'react-awesome-reveal';
 
 const CheckoutPage: React.FC = () => {
+  const { user, isLoading: authLoading } = useUser();
+  const { cart, clearCart } = useCart();
   const router = useRouter();
-  const { cart, getSubtotal, getTax, getShipping, getTotal, clearCart, createOrder } = useCart();
-  const [step, setStep] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    address: '',
-    city: '',
-    zipCode: '',
-    country: '',
-    phone: '',
-    paymentMethod: 'card',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: ''
-  });
 
-  if (cart.length === 0) {
-    router.push('/cart');
-    return null;
-  }
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    // Clear payment error when user starts typing
-    if (paymentError) {
-      setPaymentError(null);
+  // Totals
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const shipping = 0; // Free shipping for now
+  const tax = 0;
+  const total = subtotal + shipping + tax;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?next=/checkout');
+    } else if (user) {
+      fetchAddresses();
     }
-  };
+  }, [user, authLoading, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (step === 1) {
-      setStep(2);
-    } else {
-      // Process payment
-      setIsProcessing(true);
-      setPaymentError(null);
+  const fetchAddresses = async () => {
+    setLoadingAddresses(true);
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', user!.id)
+      .order('is_default', { ascending: false });
 
-      try {
-        const order = await createOrder(
-          {
-            email: formData.email,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            address: formData.address,
-            city: formData.city,
-            zipCode: formData.zipCode,
-            country: formData.country,
-            phone: formData.phone,
-          },
-          formData.paymentMethod
-        );
-
-        // Clear cart on successful order
-        clearCart();
-        
-        // Redirect to order confirmation
-        router.push(`/order-confirmation/${order.orderId}`);
-      } catch (error) {
-        setPaymentError(error instanceof Error ? error.message : 'Payment processing failed. Please try again.');
-        setIsProcessing(false);
+    if (!error && data) {
+      setAddresses(data);
+      // Auto-select default address
+      const defaultAddr = data.find(a => a.is_default);
+      if (defaultAddr) {
+        setSelectedAddressId(defaultAddr.id);
+      } else if (data.length > 0) {
+        setSelectedAddressId(data[0].id);
       }
     }
+    setLoadingAddresses(false);
   };
 
-  return (
-    <Fragment>
-      <div className='body_wrap sco_agency'>
+  const handlePlaceOrder = async () => {
+    if (!selectedAddressId) {
+      alert('Please select a delivery address');
+      return;
+    }
+    setPlacingOrder(true);
+
+    try {
+      // 1. Create Order
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user!.id,
+          address_id: selectedAddressId,
+          total_amount: total,
+          status: 'pending',
+          payment_method: 'cod' // Assuming COD for now
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2. Create Order Items
+      const orderItems = cart.map(item => ({
+        order_id: orderData.id,
+        product_id: item.Id, // Assuming 'Id' is the product ID in cart item
+        product_title: item.title,
+        quantity: item.quantity,
+        price: item.price,
+        image_url: item.images?.[0]
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // 3. Clear Cart & Redirect
+      clearCart();
+      router.push('/profile?tab=orders'); // Go to orders tab
+      // Ideally show a success message or separate success page
+
+    } catch (err: any) {
+      console.error('Order placement failed:', err);
+      alert('Failed to place order: ' + (err.message || 'Unknown error'));
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  if (authLoading) return null;
+
+  if (cart.length === 0) {
+    return (
+      <div className="body_wrap">
         <Header />
-        <main className="page_content">
-          <section className="service pt-140 pb-140">
-            <div className="container">
-              <div className="row mb-40">
-                <div className="col-12">
-                  <Fade direction="up" triggerOnce duration={1000}>
-                    <h1 className="title">Checkout</h1>
-                  </Fade>
-                </div>
-              </div>
-
-              {/* Progress Steps */}
-              <div className="row mb-50">
-                <div className="col-12">
-                  <div className="checkout-steps" style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '20px',
-                    marginBottom: '50px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      color: step >= 1 ? 'var(--color-primary-two)' : 'var(--color-default)',
-                      fontWeight: step >= 1 ? '700' : '400'
-                    }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        backgroundColor: step >= 1 ? 'var(--color-primary-two)' : '#e7e8ec',
-                        color: step >= 1 ? '#fff' : 'var(--color-default)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: '700'
-                      }}>
-                        1
-                      </div>
-                      <span>Shipping</span>
-                    </div>
-                    <div style={{ width: '50px', height: '2px', backgroundColor: step >= 2 ? 'var(--color-primary-two)' : '#e7e8ec' }}></div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      color: step >= 2 ? 'var(--color-primary-two)' : 'var(--color-default)',
-                      fontWeight: step >= 2 ? '700' : '400'
-                    }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        backgroundColor: step >= 2 ? 'var(--color-primary-two)' : '#e7e8ec',
-                        color: step >= 2 ? '#fff' : 'var(--color-default)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: '700'
-                      }}>
-                        2
-                      </div>
-                      <span>Payment</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="col-lg-8">
-                  <Fade direction="left" triggerOnce duration={1000}>
-                    <form onSubmit={handleSubmit}>
-                      {step === 1 && (
-                        <div className="checkout-form" style={{
-                          padding: '40px',
-                          backgroundColor: '#fff',
-                          borderRadius: '15px',
-                          border: '1px solid #e7e8ec'
-                        }}>
-                          <h3 className="mb-30" style={{ fontSize: '24px', marginBottom: '30px' }}>
-                            Shipping Information
-                          </h3>
-
-                          <div className="row">
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Email Address *
-                              </label>
-                              <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Phone Number *
-                              </label>
-                              <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                First Name *
-                              </label>
-                              <input
-                                type="text"
-                                name="firstName"
-                                value={formData.firstName}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Last Name *
-                              </label>
-                              <input
-                                type="text"
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-12 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Street Address *
-                              </label>
-                              <input
-                                type="text"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                City *
-                              </label>
-                              <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-md-6 mb-20">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                ZIP Code *
-                              </label>
-                              <input
-                                type="text"
-                                name="zipCode"
-                                value={formData.zipCode}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)'
-                                }}
-                              />
-                            </div>
-                            <div className="col-12 mb-30">
-                              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Country *
-                              </label>
-                              <select
-                                name="country"
-                                value={formData.country}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 20px',
-                                  borderRadius: '7px',
-                                  border: '1px solid #e7e8ec',
-                                  fontSize: '16px',
-                                  fontFamily: 'var(--font-body)',
-                                  backgroundColor: '#fff'
-                                }}
-                              >
-                                <option value="">Select Country</option>
-                                <option value="US">United States</option>
-                                <option value="UK">United Kingdom</option>
-                                <option value="CA">Canada</option>
-                                <option value="AU">Australia</option>
-                                <option value="DE">Germany</option>
-                                <option value="FR">France</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="checkout-actions" style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end' }}>
-                            <Link href="/cart" className="thm-btn thm-btn--border">
-                              Back to Cart
-                            </Link>
-                            <button type="submit" className="thm-btn thm-btn--aso thm-btn--aso_yellow">
-                              Continue to Payment
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {step === 2 && (
-                        <div className="checkout-form" style={{
-                          padding: '40px',
-                          backgroundColor: '#fff',
-                          borderRadius: '15px',
-                          border: '1px solid #e7e8ec'
-                        }}>
-                          <h3 className="mb-30" style={{ fontSize: '24px', marginBottom: '30px' }}>
-                            Payment Method
-                          </h3>
-
-                          <div className="payment-methods mb-30">
-                            <div style={{
-                              padding: '20px',
-                              border: '2px solid var(--color-primary-two)',
-                              borderRadius: '10px',
-                              marginBottom: '15px',
-                              backgroundColor: '#f6f6f8'
-                            }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethod"
-                                  value="card"
-                                  checked={formData.paymentMethod === 'card'}
-                                  onChange={handleInputChange}
-                                  style={{ width: '20px', height: '20px' }}
-                                />
-                                <span style={{ fontWeight: '600' }}>Credit/Debit Card</span>
-                              </label>
-                            </div>
-                            <div style={{
-                              padding: '20px',
-                              border: '1px solid #e7e8ec',
-                              borderRadius: '10px',
-                              marginBottom: '15px'
-                            }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethod"
-                                  value="paypal"
-                                  checked={formData.paymentMethod === 'paypal'}
-                                  onChange={handleInputChange}
-                                  style={{ width: '20px', height: '20px' }}
-                                />
-                                <span style={{ fontWeight: '600' }}>PayPal</span>
-                              </label>
-                            </div>
-                            <div style={{
-                              padding: '20px',
-                              border: '1px solid #e7e8ec',
-                              borderRadius: '10px'
-                            }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethod"
-                                  value="bank"
-                                  checked={formData.paymentMethod === 'bank'}
-                                  onChange={handleInputChange}
-                                  style={{ width: '20px', height: '20px' }}
-                                />
-                                <span style={{ fontWeight: '600' }}>Bank Transfer</span>
-                              </label>
-                            </div>
-                          </div>
-
-                          {formData.paymentMethod === 'card' && (
-                            <div className="card-details">
-                              <div className="mb-20">
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                  Card Number *
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="1234 5678 9012 3456"
-                                  required
-                                  style={{
-                                    width: '100%',
-                                    padding: '12px 20px',
-                                    borderRadius: '7px',
-                                    border: '1px solid #e7e8ec',
-                                    fontSize: '16px',
-                                    fontFamily: 'var(--font-body)'
-                                  }}
-                                />
-                              </div>
-                              <div className="row">
-                                <div className="col-md-6 mb-20">
-                                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                    Expiry Date *
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="MM/YY"
-                                    required
-                                    style={{
-                                      width: '100%',
-                                      padding: '12px 20px',
-                                      borderRadius: '7px',
-                                      border: '1px solid #e7e8ec',
-                                      fontSize: '16px',
-                                      fontFamily: 'var(--font-body)'
-                                    }}
-                                  />
-                                </div>
-                                <div className="col-md-6 mb-20">
-                                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                    CVV *
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="123"
-                                    required
-                                    style={{
-                                      width: '100%',
-                                      padding: '12px 20px',
-                                      borderRadius: '7px',
-                                      border: '1px solid #e7e8ec',
-                                      fontSize: '16px',
-                                      fontFamily: 'var(--font-body)'
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="checkout-actions" style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '30px' }}>
-                            <button
-                              type="button"
-                              onClick={() => setStep(1)}
-                              className="thm-btn thm-btn--border"
-                              disabled={isProcessing}
-                            >
-                              Back
-                            </button>
-                            <button 
-                              type="submit" 
-                              className="thm-btn thm-btn--aso thm-btn--aso_yellow"
-                              disabled={isProcessing}
-                              style={{ opacity: isProcessing ? 0.6 : 1, cursor: isProcessing ? 'not-allowed' : 'pointer' }}
-                            >
-                              {isProcessing ? 'Processing...' : 'Place Order'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </form>
-                  </Fade>
-                </div>
-
-                <div className="col-lg-4">
-                  <Fade direction="right" triggerOnce duration={1000}>
-                    <div className="order-summary" style={{
-                      padding: '30px',
-                      backgroundColor: '#fff',
-                      borderRadius: '15px',
-                      border: '1px solid #e7e8ec',
-                      position: 'sticky',
-                      top: '100px'
-                    }}>
-                      <h3 className="mb-30" style={{ fontSize: '24px', marginBottom: '30px' }}>
-                        Order Summary
-                      </h3>
-
-                      <div className="order-items mb-30" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        {cart.map((item) => {
-                          const mainImage = typeof item.images[0] === 'string'
-                            ? item.images[0]
-                            : item.images[0].src || item.images[0];
-
-                          return (
-                            <div key={item.Id} style={{
-                              display: 'flex',
-                              gap: '15px',
-                              marginBottom: '20px',
-                              paddingBottom: '20px',
-                              borderBottom: '1px solid #e7e8ec'
-                            }}>
-                              <div style={{
-                                position: 'relative',
-                                width: '60px',
-                                height: '60px',
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                                backgroundColor: '#f6f6f8'
-                              }}>
-                                <Image
-                                  src={mainImage}
-                                  alt={item.title}
-                                  fill
-                                  style={{ objectFit: 'cover' }}
-                                />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <h4 style={{ fontSize: '14px', marginBottom: '5px', fontWeight: '600' }}>
-                                  {item.title}
-                                </h4>
-                                <p style={{ fontSize: '12px', color: 'var(--color-default)', marginBottom: '5px' }}>
-                                  Qty: {item.quantity}
-                                </p>
-                                <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-primary-two)' }}>
-                                  ${(item.price * item.quantity).toFixed(2)}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="summary-totals">
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          marginBottom: '15px',
-                          paddingBottom: '15px',
-                          borderBottom: '1px solid #e7e8ec'
-                        }}>
-                          <span>Subtotal:</span>
-                          <span style={{ fontWeight: '600' }}>${getSubtotal().toFixed(2)}</span>
-                        </div>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          marginBottom: '15px',
-                          paddingBottom: '15px',
-                          borderBottom: '1px solid #e7e8ec'
-                        }}>
-                          <span>Shipping:</span>
-                          <span style={{ fontWeight: '600' }}>Free</span>
-                        </div>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          marginTop: '20px',
-                          fontSize: '20px',
-                          fontWeight: '700',
-                          color: 'var(--color-heading)'
-                        }}>
-                          <span>Total:</span>
-                          <span style={{ color: 'var(--color-primary-two)' }}>
-                            ${getSubtotal().toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Fade>
-                </div>
-              </div>
-            </div>
-          </section>
+        <main className="checkout-container">
+          <div className="container empty-cart-state">
+            <h2>Your cart is empty</h2>
+            <p>Add some items before checking out.</p>
+            <Link href="/products" className="btn-primary">Browse Products</Link>
+          </div>
         </main>
         <Footer />
-        <Scrollbar />
       </div>
-    </Fragment>
+    );
+  }
+
+  return (
+    <div className="body_wrap">
+      <Header />
+      <main className="checkout-container">
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '140px 20px 80px' }}>
+          <h1 className="page-title">Checkout</h1>
+
+          <div className="row g-5">
+            {/* Left Column: Address */}
+            <div className="col-lg-8">
+              <section className="checkout-section">
+                <div className="section-header">
+                  <h3><i className="fas fa-map-marker-alt"></i> Delivery Address</h3>
+                  <Link href="/account/addresses/add" className="add-new-link">
+                    + Add New
+                  </Link>
+                </div>
+
+                {loadingAddresses ? (
+                  <div className="p-4 text-center">Loading addresses...</div>
+                ) : addresses.length === 0 ? (
+                  <div className="no-addresses">
+                    <p>No addresses found. Please add a delivery address.</p>
+                    <Link href="/account/addresses/add" className="btn-secondary">
+                      Add Address
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="address-list">
+                    {addresses.map(addr => (
+                      <div
+                        key={addr.id}
+                        className={`address-radio-card ${selectedAddressId === addr.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                      >
+                        <div className="radio-indicator">
+                          <div className="dot"></div>
+                        </div>
+                        <div className="addr-details">
+                          <div className="d-flex gap-2 align-items-center mb-1">
+                            <strong>{addr.full_name}</strong>
+                            <span className="badge-pill">{addr.phone}</span>
+                            {addr.is_default && <span className="badge-default">Default</span>}
+                          </div>
+                          <p>
+                            {addr.address_line1}, {addr.address_line2}, {addr.city}, {addr.state} - <strong>{addr.pincode}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="checkout-section mt-4">
+                <div className="section-header">
+                  <h3><i className="fas fa-credit-card"></i> Payment Method</h3>
+                </div>
+                <div className="payment-option selected">
+                  <div className="radio-indicator"><div className="dot"></div></div>
+                  <span>Cash on Delivery (COD)</span>
+                </div>
+              </section>
+            </div>
+
+            {/* Right Column: Order Summary */}
+            <div className="col-lg-4">
+              <div className="order-summary-card sticky-top" style={{ top: '120px' }}>
+                <h3>Order Summary</h3>
+                <div className="summary-items">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="summary-item">
+                      <span className="name">{item.title} <small>x{item.quantity}</small></span>
+                      <span className="price">${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="summary-divider"></div>
+                <div className="summary-row">
+                  <span>Subtotal</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Shipping</span>
+                  <span className="text-green">Free</span>
+                </div>
+                <div className="summary-divider"></div>
+                <div className="summary-row total">
+                  <span>Total</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+
+                <button
+                  className="place-order-btn"
+                  onClick={handlePlaceOrder}
+                  disabled={placingOrder || !selectedAddressId}
+                >
+                  {placingOrder ? 'Processing...' : 'Place Order'}
+                </button>
+                <p className="secure-text"><i className="fas fa-lock"></i> Secure Checkout</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+      <Scrollbar />
+
+      <style jsx>{`
+                .checkout-container {
+                    background-color: #f8fafc;
+                    min-height: 100vh;
+                }
+                .page-title {
+                    font-size: 32px;
+                    font-weight: 800;
+                    margin-bottom: 40px;
+                    color: #1e293b;
+                }
+                .empty-cart-state {
+                    text-align: center;
+                    padding: 100px 20px;
+                }
+                
+                .checkout-section {
+                    background: #fff;
+                    border-radius: 16px;
+                    padding: 30px;
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                }
+                .section-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 24px;
+                }
+                .section-header h3 {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #334155;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin: 0;
+                }
+                .add-new-link {
+                    color: #2563eb;
+                    font-weight: 600;
+                    text-decoration: none;
+                    font-size: 14px;
+                }
+
+                .address-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+                .address-radio-card {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    padding: 20px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .address-radio-card.selected {
+                    border-color: #2563eb;
+                    background-color: #eff6ff;
+                }
+                .radio-indicator {
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    border: 2px solid #cbd5e1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-top: 2px;
+                    flex-shrink: 0;
+                }
+                .address-radio-card.selected .radio-indicator {
+                    border-color: #2563eb;
+                }
+                .dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    background: #2563eb;
+                    opacity: 0;
+                    transform: scale(0.5);
+                    transition: all 0.2s;
+                }
+                .address-radio-card.selected .dot {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                .addr-details p {
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+                .badge-pill {
+                    background: #f1f5f9;
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    color: #475569;
+                }
+                .badge-default {
+                    background: #dbeafe;
+                    color: #1e40af;
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-weight: 700;
+                }
+
+                .payment-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 16px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-weight: 500;
+                }
+                .payment-option.selected {
+                    border-color: #2563eb;
+                    background: #eff6ff;
+                    color: #1e3a8a;
+                }
+
+                .order-summary-card {
+                    background: #fff;
+                    padding: 30px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+                }
+                .order-summary-card h3 {
+                    font-size: 20px;
+                    margin-bottom: 24px;
+                    font-weight: 700;
+                }
+                .summary-items {
+                    max-height: 300px;
+                    overflow-y: auto;
+                    margin-bottom: 20px;
+                }
+                .summary-item {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 12px;
+                    font-size: 14px;
+                    color: #475569;
+                }
+                .summary-divider {
+                    height: 1px;
+                    background: #e2e8f0;
+                    margin: 16px 0;
+                }
+                .summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 12px;
+                    color: #64748b;
+                }
+                .summary-row.total {
+                    color: #0f172a;
+                    font-weight: 700;
+                    font-size: 18px;
+                    margin-top: 8px;
+                }
+                .text-green { color: #16a34a; font-weight: 600; }
+
+                .place-order-btn {
+                    width: 100%;
+                    background: #000;
+                    color: #fff;
+                    padding: 16px;
+                    border: none;
+                    border-radius: 50px;
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin-top: 24px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .place-order-btn:hover:not(:disabled) {
+                    background: #333;
+                    transform: translateY(-2px);
+                }
+                .place-order-btn:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                }
+                .secure-text {
+                    text-align: center;
+                    color: #94a3b8;
+                    font-size: 12px;
+                    margin-top: 16px;
+                    margin-bottom: 0;
+                }
+                .btn-primary {
+                    background: #2563eb;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 50px;
+                    text-decoration: none;
+                    margin-top: 20px;
+                    display: inline-block;
+                }
+                .btn-secondary {
+                    background: #f1f5f9;
+                    color: #475569;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    display: inline-block;
+                    font-size: 14px;
+                }
+                @media (max-width: 991px) {
+                    .order-summary-card { margin-top: 30px; }
+                }
+            `}</style>
+    </div>
   );
 };
 
 export default CheckoutPage;
-
-
