@@ -12,7 +12,20 @@ const nextConfig = {
     root: __dirname,
   },
   images: {
-    domains: ['cdn.shopify.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.shopify.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'supabase.co',
+      },
+    ],
   },
 };
 

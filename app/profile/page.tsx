@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -34,7 +34,7 @@ interface SupabaseOrder {
   address?: Address;
 }
 
-const ProfilePage: React.FC = () => {
+const ProfilePageContent: React.FC = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isLoading, signOut } = useUser();
@@ -1309,6 +1309,31 @@ const ProfilePage: React.FC = () => {
                 }
             `}</style>
         </div>
+    );
+};
+
+const ProfilePage: React.FC = () => {
+    return (
+        <Suspense fallback={
+            <div className="body_wrap sco_agency">
+                <Header />
+                <main className="page_content">
+                    <section className="service pt-140 pb-140">
+                        <div className="container">
+                            <div className="row">
+                                <div className="col-12 text-center">
+                                    <p className="content">Loading profile...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+                <Footer />
+                <Scrollbar />
+            </div>
+        }>
+            <ProfilePageContent />
+        </Suspense>
     );
 };
 
