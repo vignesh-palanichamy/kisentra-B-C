@@ -171,8 +171,8 @@ const OrderConfirmationPage: React.FC = () => {
 
   const statusColor = statusColors[order.status] || statusColors.pending;
   const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = 0; // Free shipping
-  const tax = 0;
+  const shipping: number = 0; // Free shipping
+  const tax: number = 0;
   const total = order.total_amount;
 
   return (
