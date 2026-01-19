@@ -200,14 +200,14 @@ const CheckoutPage: React.FC = () => {
                   {cart.map((item, idx) => (
                     <div key={idx} className="summary-item">
                       <span className="name">{item.title} <small>x{item.quantity}</small></span>
-                      <span className="price">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="price">₹{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="summary-divider"></div>
                 <div className="summary-row">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="summary-row">
                   <span>Shipping</span>
@@ -216,7 +216,7 @@ const CheckoutPage: React.FC = () => {
                 <div className="summary-divider"></div>
                 <div className="summary-row total">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
 
                 <button

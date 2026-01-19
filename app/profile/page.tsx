@@ -401,7 +401,7 @@ const ProfilePage: React.FC = () => {
                                                                     </div>
                                                                     <div className="meta-item">
                                                                         <i className="far fa-credit-card"></i>
-                                                                        ${order.total.toFixed(2)}
+                                                                        ₹{order.total.toFixed(2)}
                                                                     </div>
                                                                 </div>
                                                                 <div className="order-items">
@@ -421,7 +421,7 @@ const ProfilePage: React.FC = () => {
                                                                                 </button>
                                                                             </div>
                                                                             <span className="item-qty">x{item.quantity}</span>
-                                                                            <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
+                                                                            <span className="item-price">₹{(item.price * item.quantity).toFixed(2)}</span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -463,12 +463,12 @@ const ProfilePage: React.FC = () => {
                                                                         </div>
                                                                         <div>
                                                                             <h5 style={{ margin: 0, fontSize: '16px' }}>{item.title}</h5>
-                                                                            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>${item.price.toFixed(2)} x {item.quantity}</p>
+                                                                            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>₹{item.price.toFixed(2)} x {item.quantity}</p>
                                                                         </div>
                                                                     </div>
                                                                     <div className="text-end">
                                                                         <span style={{ fontWeight: '600', color: 'var(--color-primary-two)' }}>
-                                                                            ${(item.price * item.quantity).toFixed(2)}
+                                                                            ₹{(item.price * item.quantity).toFixed(2)}
                                                                         </span>
                                                                     </div>
                                                                 </div>
@@ -479,7 +479,7 @@ const ProfilePage: React.FC = () => {
                                                     <div className="cart-summary p-4 bg-light rounded-3 mb-4">
                                                         <div className="d-flex justify-content-between mb-2">
                                                             <span>Subtotal</span>
-                                                            <strong>${cart.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(2)}</strong>
+                                                            <strong>₹{cart.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(2)}</strong>
                                                         </div>
                                                         <p className="text-muted small mb-0">Tax and shipping calculated at checkout.</p>
                                                     </div>

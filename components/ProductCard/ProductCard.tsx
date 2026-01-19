@@ -206,10 +206,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
 
             <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 'auto' }}>
-              <span style={{ fontSize: '18px', fontWeight: '600', color: '#212121' }}>${product.price}</span>
+              <span style={{ fontSize: '18px', fontWeight: '600', color: '#212121' }}>₹{product.price}</span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <>
-                  <span style={{ fontSize: '14px', color: '#878787', textDecoration: 'line-through' }}>${product.originalPrice}</span>
+                  <span style={{ fontSize: '14px', color: '#878787', textDecoration: 'line-through' }}>₹{product.originalPrice}</span>
                   <span style={{ fontSize: '13px', color: '#388e3c', fontWeight: '700' }}>
                     {discountPercentage}% off
                   </span>

@@ -367,16 +367,16 @@ const ProductDetailPage: React.FC = () => {
                   <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #e0e6ef' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                       <span style={{ fontSize: '36px', fontWeight: '800', color: '#040c13' }}>
-                        ${product.price.toLocaleString()}
+                        ₹{product.price.toLocaleString()}
                       </span>
                     </div>
                     {product.originalPrice && product.originalPrice > product.price && (
                       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '5px' }}>
                         <span style={{ fontSize: '14px', color: '#555' }}>
-                          Was <span style={{ textDecoration: 'line-through' }}>${product.originalPrice.toLocaleString()}</span>
+                          Was <span style={{ textDecoration: 'line-through' }}>₹{product.originalPrice.toLocaleString()}</span>
                         </span>
                         <span style={{ fontSize: '14px', color: '#b1110e', fontWeight: '700', marginTop: '2px' }}>
-                          Save ${(product.originalPrice - product.price).toLocaleString()}
+                          Save ₹{(product.originalPrice - product.price).toLocaleString()}
                         </span>
                       </div>
                     )}

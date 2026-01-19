@@ -118,14 +118,22 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
 
     // 2. If no ID match candidate, check by Slug
     if (!existingId) {
+      // NOTE: PostgREST returns 406 (PGRST116) for `.single()` when 0 rows match.
+      // We want "not found" to be a normal case, so use maybeSingle().
       const { data: existingBySlug, error: checkError } = await supabase
         .from('products')
         .select('id')
         .eq('slug', product.slug)
-        .single();
+        .maybeSingle();
 
-      if (!checkError && existingBySlug) {
+      // maybeSingle() returns:
+      // - data: null, error: null when no rows match
+      // - data: {id}, error: null when one row matches
+      // - error when multiple rows match or other failures
+      if (!checkError && existingBySlug?.id) {
         existingId = existingBySlug.id;
+      } else if (checkError) {
+        console.error('Error checking existing product by slug:', checkError);
       }
     }
 

@@ -43,13 +43,16 @@ export const getProducts = (): Product[] => {
 };
 
 // Async version to load from Supabase (called after mount)
-export const getProductsFromSupabaseAsync = async (): Promise<Product[] | null> => {
+export const getProductsFromSupabaseAsync = async (signal?: AbortSignal): Promise<Product[] | null> => {
+  if (signal?.aborted) return null;
   if (typeof window === 'undefined') return null;
 
   try {
+    if (signal?.aborted) return null;
     const { isSupabaseConfigured } = await import('@/lib/supabase');
     if (isSupabaseConfigured()) {
       const { getProductsFromSupabase } = await import('./products-supabase');
+      if (signal?.aborted) return null;
       return await getProductsFromSupabase();
     }
   } catch (error: any) {

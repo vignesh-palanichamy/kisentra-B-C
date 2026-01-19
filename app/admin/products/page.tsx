@@ -29,15 +29,20 @@ const AdminProductsPage: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return; // Don't load if not authenticated
 
-    loadProducts();
+    const controller = new AbortController();
+    loadProducts(controller.signal);
     const action = searchParams?.get('action');
     if (action === 'add') {
       setShowForm(true);
       setEditingProduct(null);
     }
+
+    return () => controller.abort();
   }, [searchParams, isAuthenticated]);
 
-  const loadProducts = async () => {
+  const loadProducts = async (signal?: AbortSignal) => {
+    if (signal?.aborted) return;
+
     // Load local first for speed
     const loadedProducts = getProducts();
     setProducts(loadedProducts);
@@ -45,7 +50,8 @@ const AdminProductsPage: React.FC = () => {
     // Then try to fetch fresh data from server
     try {
       const { getProductsFromSupabaseAsync } = await import('@/api/products');
-      const remoteProducts = await getProductsFromSupabaseAsync();
+      const remoteProducts = await getProductsFromSupabaseAsync(signal);
+      if (signal?.aborted) return;
       if (remoteProducts) {
         setProducts(remoteProducts);
         // Also update local cache
@@ -251,7 +257,7 @@ const AdminProductsPage: React.FC = () => {
                       <td style={{ padding: '15px' }}>
                         <div>
                           <span style={{ fontWeight: '700', color: 'var(--color-primary-two)' }}>
-                            ${product.price}
+                            ₹{product.price}
                           </span>
                           {product.originalPrice && (
                             <span style={{
@@ -260,7 +266,7 @@ const AdminProductsPage: React.FC = () => {
                               color: 'var(--color-default)',
                               fontSize: '14px'
                             }}>
-                              ${product.originalPrice}
+                              ₹{product.originalPrice}
                             </span>
                           )}
                         </div>
@@ -765,7 +771,7 @@ const ProductForm: React.FC<{
                 </div>
 
                 <div className="col-md-6 mb-30">
-                  <InputLabel required>Price ($)</InputLabel>
+                  <InputLabel required>Price (₹)</InputLabel>
                   <StyledInput
                     type="number"
                     placeholder="0.00"
@@ -778,7 +784,7 @@ const ProductForm: React.FC<{
                 </div>
 
                 <div className="col-md-6 mb-30">
-                  <InputLabel>Original Price ($)</InputLabel>
+                  <InputLabel>Original Price (₹)</InputLabel>
                   <StyledInput
                     type="number"
                     placeholder="0.00"

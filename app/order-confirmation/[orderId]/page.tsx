@@ -203,7 +203,7 @@ const OrderConfirmationPage: React.FC = () => {
                                   Quantity: {item.quantity}
                                 </p>
                                 <p style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-primary-two)' }}>
-                                  ${(item.price * item.quantity).toFixed(2)}
+                                  ₹{(item.price * item.quantity).toFixed(2)}
                                 </p>
                               </div>
                             </div>
@@ -247,7 +247,7 @@ const OrderConfirmationPage: React.FC = () => {
                         marginBottom: '15px'
                       }}>
                         <span>Subtotal:</span>
-                        <span style={{ fontWeight: '600' }}>${order.subtotal.toFixed(2)}</span>
+                        <span style={{ fontWeight: '600' }}>₹{order.subtotal.toFixed(2)}</span>
                       </div>
 
                       <div className="summary-row mb-15" style={{
@@ -256,7 +256,7 @@ const OrderConfirmationPage: React.FC = () => {
                         marginBottom: '15px'
                       }}>
                         <span>Tax:</span>
-                        <span style={{ fontWeight: '600' }}>${order.tax.toFixed(2)}</span>
+                        <span style={{ fontWeight: '600' }}>₹{order.tax.toFixed(2)}</span>
                       </div>
 
                       <div className="summary-row mb-15" style={{
@@ -266,7 +266,7 @@ const OrderConfirmationPage: React.FC = () => {
                       }}>
                         <span>Shipping:</span>
                         <span style={{ fontWeight: '600' }}>
-                          {order.shipping === 0 ? 'Free' : `$${order.shipping.toFixed(2)}`}
+                          {order.shipping === 0 ? 'Free' : `₹${order.shipping.toFixed(2)}`}
                         </span>
                       </div>
 
@@ -282,7 +282,7 @@ const OrderConfirmationPage: React.FC = () => {
                       }}>
                         <span>Total:</span>
                         <span style={{ color: 'var(--color-primary-two)' }}>
-                          ${order.total.toFixed(2)}
+                          ₹{order.total.toFixed(2)}
                         </span>
                       </div>
 
