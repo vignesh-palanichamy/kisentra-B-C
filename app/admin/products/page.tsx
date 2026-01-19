@@ -238,6 +238,7 @@ const AdminProductsPage: React.FC = () => {
                               src={mainImage}
                               alt={product.title}
                               fill
+                              sizes="60px"
                               style={{ objectFit: 'cover' }}
                             />
                           )}
