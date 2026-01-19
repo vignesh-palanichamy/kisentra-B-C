@@ -15,6 +15,7 @@ import { UserProvider } from "../contexts/UserContext";
 import WhatsAppFloatingButton from "../components/WhatsAppFloatingButton/WhatsAppFloatingButton";
 import MailFloatingButton from "../components/MailFloatingButton/MailFloatingButton";
 import MobileBottomNav from "../components/MobileBottomNav/MobileBottomNav";
+import GlobalErrorHandler from "../components/GlobalErrorHandler/GlobalErrorHandler";
 
 export const metadata: Metadata = {
   title: "Innomax - Technology & IT Startup Next Js Template",
@@ -37,6 +38,7 @@ export default function RootLayout({
         />
       </head>
       <body id='scrool'>
+        <GlobalErrorHandler />
         <UserProvider>
           <CartProvider>
             {children}

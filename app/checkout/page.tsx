@@ -6,11 +6,12 @@ import Footer from '@/components/footer/Footer';
 import Scrollbar from '@/components/scrollbar/scrollbar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { useCart } from '@/contexts/CartContext';
 import { Address } from '@/types';
 import { Fade } from 'react-awesome-reveal';
+import SuccessNotification from '@/components/SuccessNotification/SuccessNotification';
 
 const CheckoutPage: React.FC = () => {
   const { user, isLoading: authLoading } = useUser();
@@ -21,12 +22,31 @@ const CheckoutPage: React.FC = () => {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Totals
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const shipping = 0; // Free shipping for now
   const tax = 0;
   const total = subtotal + shipping + tax;
+
+  // Handle unhandled AbortErrors from Turbopack hot reload
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason?.name === 'AbortError' || 
+          event.reason?.message?.includes('aborted') ||
+          event.reason?.message?.includes('signal is aborted')) {
+        event.preventDefault();
+        // Silently ignore AbortErrors from hot reload
+        return;
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,48 +82,160 @@ const CheckoutPage: React.FC = () => {
       alert('Please select a delivery address');
       return;
     }
+
+    if (!user || !user.id) {
+      alert('You must be logged in to place an order');
+      router.push('/auth?next=/checkout');
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+
     setPlacingOrder(true);
 
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        throw new Error('Database is not configured. Please check your Supabase settings.');
+      }
+
+      // Validate total amount
+      if (total <= 0) {
+        throw new Error('Invalid order total');
+      }
+
       // 1. Create Order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: user!.id,
+          user_id: user.id,
           address_id: selectedAddressId,
           total_amount: total,
           status: 'pending',
-          payment_method: 'cod' // Assuming COD for now
+          payment_method: 'cod'
         })
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw new Error(orderError.message || `Failed to create order: ${orderError.code || 'Unknown error'}`);
+      }
+
+      if (!orderData || !orderData.id) {
+        throw new Error('Order was created but no order ID was returned');
+      }
 
       // 2. Create Order Items
-      const orderItems = cart.map(item => ({
-        order_id: orderData.id,
-        product_id: item.Id, // Assuming 'Id' is the product ID in cart item
-        product_title: item.title,
-        quantity: item.quantity,
-        price: item.price,
-        image_url: item.images?.[0]
-      }));
+      const orderItems = cart.map(item => {
+        // Handle image_url - convert StaticImageData to string if needed
+        let imageUrl: string | null = null;
+        if (item.images && item.images.length > 0) {
+          const firstImage = item.images[0];
+          if (typeof firstImage === 'string') {
+            imageUrl = firstImage;
+          } else if (firstImage && typeof firstImage === 'object') {
+            // Handle StaticImageData or similar objects
+            imageUrl = (firstImage as any).src || (firstImage as any).default?.src || null;
+          }
+        }
+        
+        return {
+          order_id: orderData.id,
+          product_id: item.Id, // Assuming 'Id' is the product ID in cart item
+          product_title: item.title,
+          quantity: item.quantity,
+          price: item.price,
+          image_url: imageUrl
+        };
+      });
+
+      if (!orderItems || orderItems.length === 0) {
+        throw new Error('No order items to insert');
+      }
 
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Order items creation error:', itemsError);
+        // Try to delete the order if items failed
+        await supabase.from('orders').delete().eq('id', orderData.id);
+        throw new Error(itemsError.message || `Failed to create order items: ${itemsError.code || 'Unknown error'}`);
+      }
 
-      // 3. Clear Cart & Redirect
+      // 3. Clear Cart
       clearCart();
-      router.push('/profile?tab=orders'); // Go to orders tab
-      // Ideally show a success message or separate success page
+      
+      // 4. Show success notification
+      setShowSuccess(true);
+      
+      // 5. Redirect to order confirmation page after a short delay
+      setTimeout(() => {
+        router.push(`/order-confirmation/${orderData.id}`);
+      }, 1500);
 
     } catch (err: any) {
+      // Ignore AbortError from Turbopack hot reload - don't show to user
+      if (err?.name === 'AbortError' || 
+          err?.message?.includes('aborted') || 
+          err?.message?.includes('signal is aborted') ||
+          err?.code === '20') {
+        console.warn('Order placement aborted (likely from hot reload):', err);
+        setPlacingOrder(false); // Reset button state
+        return; // Silently return, don't show error to user
+      }
+
       console.error('Order placement failed:', err);
-      alert('Failed to place order: ' + (err.message || 'Unknown error'));
+      
+      // Extract detailed error message from PostgREST/Supabase errors
+      let errorMessage = 'Unknown error occurred';
+      
+      if (err) {
+        // PostgREST error format
+        if (err.message) {
+          errorMessage = err.message;
+        } 
+        // Check for common Supabase error codes
+        else if (err.code === 'PGRST116' || err.code === '42P01') {
+          errorMessage = 'Database tables not found. Please run the SQL script (supabase_orders.sql) in your Supabase dashboard to create the required tables.';
+        } else if (err.code === '42501') {
+          errorMessage = 'Permission denied. Please check your Row Level Security (RLS) policies in Supabase.';
+        } else if (err.code === '23503') {
+          errorMessage = 'Invalid reference. The address or user ID does not exist.';
+        } else if (err.code === '23505') {
+          errorMessage = 'Duplicate entry. This order already exists.';
+        } else if (err.code) {
+          errorMessage = `Database error (${err.code}): ${err.message || err.details || 'Unknown database error'}`;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        } else if (err.details) {
+          errorMessage = err.details;
+        } else if (err.hint) {
+          errorMessage = err.hint;
+        } else {
+          // Try to stringify, but handle circular references
+          try {
+            errorMessage = JSON.stringify(err, null, 2);
+          } catch {
+            errorMessage = String(err);
+          }
+        }
+      }
+      
+      console.error('Full error details:', {
+        message: errorMessage,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+        fullError: err
+      });
+      
+      alert('Failed to place order:\n\n' + errorMessage + '\n\nPlease check the console for more details.');
     } finally {
       setPlacingOrder(false);
     }
@@ -234,6 +366,14 @@ const CheckoutPage: React.FC = () => {
       </main>
       <Footer />
       <Scrollbar />
+      
+      {showSuccess && (
+        <SuccessNotification
+          message="Order placed successfully! Redirecting to order details..."
+          onClose={() => setShowSuccess(false)}
+          duration={3000}
+        />
+      )}
 
       <style jsx>{`
                 .checkout-container {

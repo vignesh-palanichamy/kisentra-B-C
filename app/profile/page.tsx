@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import Header from '@/components/header/Header';
@@ -11,17 +11,70 @@ import { Fade } from 'react-awesome-reveal';
 import { useCart } from '@/contexts/CartContext';
 import { useUser } from '@/contexts/UserContext';
 import { Address } from '@/types';
+import Link from 'next/link';
+
+interface SupabaseOrderItem {
+  id: string;
+  product_id: string;
+  product_title: string;
+  quantity: number;
+  price: number;
+  image_url: string | null;
+}
+
+interface SupabaseOrder {
+  id: string;
+  user_id: string;
+  address_id: string;
+  total_amount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  payment_method: string;
+  created_at: string;
+  order_items: SupabaseOrderItem[];
+  address?: Address;
+}
 
 const ProfilePage: React.FC = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, isLoading, signOut } = useUser();
     const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'settings' | 'cart' | 'addresses'>('info');
-    const { orders, cart, addToCart } = useCart();
+    const { cart, addToCart } = useCart();
 
     // Address State
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    // Orders State (from Supabase)
+    const [supabaseOrders, setSupabaseOrders] = useState<SupabaseOrder[]>([]);
+    const [loadingOrders, setLoadingOrders] = useState(false);
+
+    // Handle unhandled AbortErrors from Turbopack hot reload
+    useEffect(() => {
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            if (event.reason?.name === 'AbortError' || 
+                event.reason?.message?.includes('aborted') ||
+                event.reason?.message?.includes('signal is aborted')) {
+                event.preventDefault();
+                // Silently ignore AbortErrors from hot reload
+                return;
+            }
+        };
+
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        return () => {
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        };
+    }, []);
+
+    // Handle URL parameter for tab
+    useEffect(() => {
+        const tab = searchParams?.get('tab');
+        if (tab && ['info', 'orders', 'settings', 'cart', 'addresses'].includes(tab)) {
+            setActiveTab(tab as any);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -34,6 +87,114 @@ const ProfilePage: React.FC = () => {
         if ((activeTab === 'addresses' || activeTab === 'info') && user) {
             fetchAddresses();
         }
+    }, [activeTab, user]);
+
+    // Fetch orders from Supabase when tab changes to 'orders'
+    useEffect(() => {
+        if (!user || activeTab !== 'orders') return;
+        
+        const controller = new AbortController();
+        let isMounted = true;
+        
+        const fetchOrders = async () => {
+            setLoadingOrders(true);
+            try {
+                // Fetch orders with order items
+                const { data: ordersData, error: ordersError } = await supabase
+                    .from('orders')
+                    .select(`
+                        *,
+                        order_items (*)
+                    `)
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (controller.signal.aborted || !isMounted) return;
+
+                if (ordersError) {
+                    // Ignore abort errors
+                    if (ordersError.message?.includes('aborted') || ordersError.code === '20') {
+                        return;
+                    }
+                    console.error('Error fetching orders:', ordersError);
+                    throw ordersError;
+                }
+
+                if (!ordersData || ordersData.length === 0) {
+                    setSupabaseOrders([]);
+                    setLoadingOrders(false);
+                    return;
+                }
+
+                // Collect unique address IDs
+                const addressIds = [...new Set(
+                    ordersData
+                        .map((order: any) => order.address_id)
+                        .filter((id: string | null) => id !== null)
+                )];
+
+                // Fetch all addresses in one query (much faster!)
+                let addressesMap: Record<string, Address> = {};
+                if (addressIds.length > 0) {
+                    try {
+                        const { data: addressesData, error: addressesError } = await supabase
+                            .from('addresses')
+                            .select('*')
+                            .in('id', addressIds);
+
+                        if (controller.signal.aborted || !isMounted) return;
+
+                        if (!addressesError && addressesData) {
+                            // Create a map for quick lookup
+                            addressesMap = addressesData.reduce((acc: Record<string, Address>, addr: Address) => {
+                                acc[addr.id] = addr;
+                                return acc;
+                            }, {});
+                        }
+                    } catch (addrErr: any) {
+                        // Ignore abort errors
+                        if (!addrErr?.message?.includes('aborted') && addrErr?.code !== '20') {
+                            console.warn('Error fetching addresses:', addrErr);
+                        }
+                    }
+                }
+
+                if (controller.signal.aborted || !isMounted) return;
+
+                // Map addresses to orders
+                const ordersWithDetails: SupabaseOrder[] = ordersData.map((order: any) => ({
+                    ...order,
+                    address: order.address_id ? addressesMap[order.address_id] : undefined
+                }));
+
+                setSupabaseOrders(ordersWithDetails);
+            } catch (error: any) {
+                // Ignore AbortError and aborted signals
+                if (error?.name === 'AbortError' || 
+                    error?.message?.includes('aborted') || 
+                    error?.code === '20' ||
+                    controller.signal.aborted ||
+                    !isMounted) {
+                    return;
+                }
+                console.error('Error loading orders:', error);
+                // Set empty array on error so UI doesn't stay in loading state
+                if (isMounted) {
+                    setSupabaseOrders([]);
+                }
+            } finally {
+                if (!controller.signal.aborted && isMounted) {
+                    setLoadingOrders(false);
+                }
+            }
+        };
+
+        fetchOrders();
+
+        return () => {
+            controller.abort();
+            isMounted = false;
+        };
     }, [activeTab, user]);
 
     // Add Address Form State
@@ -369,7 +530,14 @@ const ProfilePage: React.FC = () => {
                                                 <p>Track and view your past purchases</p>
                                             </div>
 
-                                            {orders.length === 0 ? (
+                                            {loadingOrders ? (
+                                                <div className="empty-state">
+                                                    <div className="empty-icon">
+                                                        <i className="far fa-spinner fa-spin"></i>
+                                                    </div>
+                                                    <p>Loading orders...</p>
+                                                </div>
+                                            ) : supabaseOrders.length === 0 ? (
                                                 <div className="empty-state">
                                                     <div className="empty-icon">
                                                         <i className="far fa-shopping-basket"></i>
@@ -382,12 +550,12 @@ const ProfilePage: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <div className="orders-container">
-                                                    {orders.map((order) => (
-                                                        <div key={order.orderId} className="order-card">
+                                                    {supabaseOrders.map((order) => (
+                                                        <div key={order.id} className="order-card">
                                                             <div className="order-header">
                                                                 <div className="order-id">
                                                                     <span className="label">Order #</span>
-                                                                    <span className="id">{order.orderId}</span>
+                                                                    <span className="id">{order.id.substring(0, 8)}...</span>
                                                                 </div>
                                                                 <div className={`order-status status-${order.status}`}>
                                                                     {order.status}
@@ -397,33 +565,36 @@ const ProfilePage: React.FC = () => {
                                                                 <div className="order-meta">
                                                                     <div className="meta-item">
                                                                         <i className="far fa-calendar"></i>
-                                                                        {new Date(order.orderDate).toLocaleDateString()}
+                                                                        {new Date(order.created_at).toLocaleDateString()}
                                                                     </div>
                                                                     <div className="meta-item">
                                                                         <i className="far fa-credit-card"></i>
-                                                                        ₹{order.total.toFixed(2)}
+                                                                        ₹{order.total_amount.toFixed(2)}
+                                                                    </div>
+                                                                    <div className="meta-item">
+                                                                        <i className="far fa-money-bill"></i>
+                                                                        {order.payment_method.toUpperCase()}
                                                                     </div>
                                                                 </div>
                                                                 <div className="order-items">
-                                                                    {order.items.map((item, idx) => (
-                                                                        <div key={idx} className="order-item-row">
+                                                                    {order.order_items?.map((item) => (
+                                                                        <div key={item.id} className="order-item-row">
                                                                             <div className="d-flex align-items-center gap-2 flex-grow-1">
-                                                                                <span className="item-name">{item.title}</span>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        addToCart(item, 1);
-                                                                                        setActiveTab('cart');
-                                                                                    }}
-                                                                                    className="btn-link"
-                                                                                    title="Buy Again"
-                                                                                >
-                                                                                    <i className="far fa-cart-plus"></i>
-                                                                                </button>
+                                                                                <span className="item-name">{item.product_title}</span>
                                                                             </div>
                                                                             <span className="item-qty">x{item.quantity}</span>
                                                                             <span className="item-price">₹{(item.price * item.quantity).toFixed(2)}</span>
                                                                         </div>
                                                                     ))}
+                                                                </div>
+                                                                <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e7e8ec' }}>
+                                                                    <Link 
+                                                                        href={`/order-confirmation/${order.id}`}
+                                                                        className="thm-btn thm-btn--border"
+                                                                        style={{ fontSize: '14px', padding: '8px 16px' }}
+                                                                    >
+                                                                        View Details
+                                                                    </Link>
                                                                 </div>
                                                             </div>
                                                         </div>
