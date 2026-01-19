@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Address } from '@/types';
 import { Fade } from 'react-awesome-reveal';
 import SuccessNotification from '@/components/SuccessNotification/SuccessNotification';
+import { saveProductToSupabase } from '@/api/products-supabase';
 
 const CheckoutPage: React.FC = () => {
   const { user, isLoading: authLoading } = useUser();
@@ -129,29 +130,69 @@ const CheckoutPage: React.FC = () => {
         throw new Error('Order was created but no order ID was returned');
       }
 
-      // 2. Create Order Items
-      const orderItems = cart.map(item => {
-        // Handle image_url - convert StaticImageData to string if needed
-        let imageUrl: string | null = null;
-        if (item.images && item.images.length > 0) {
-          const firstImage = item.images[0];
-          if (typeof firstImage === 'string') {
-            imageUrl = firstImage;
-          } else if (firstImage && typeof firstImage === 'object') {
-            // Handle StaticImageData or similar objects
-            imageUrl = (firstImage as any).src || (firstImage as any).default?.src || null;
+      // 2. Create Order Items - Convert numeric IDs to UUIDs
+      const orderItems = await Promise.all(
+        cart.map(async (item) => {
+          // Handle image_url - convert StaticImageData to string if needed
+          let imageUrl: string | null = null;
+          if (item.images && item.images.length > 0) {
+            const firstImage = item.images[0];
+            if (typeof firstImage === 'string') {
+              imageUrl = firstImage;
+            } else if (firstImage && typeof firstImage === 'object') {
+              // Handle StaticImageData or similar objects
+              imageUrl = (firstImage as any).src || (firstImage as any).default?.src || null;
+            }
           }
-        }
-        
-        return {
-          order_id: orderData.id,
-          product_id: item.Id, // Assuming 'Id' is the product ID in cart item
-          product_title: item.title,
-          quantity: item.quantity,
-          price: item.price,
-          image_url: imageUrl
-        };
-      });
+
+          // Convert product ID to UUID if needed
+          let productId = item.Id;
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
+
+          if (!isUUID) {
+            console.log(`Product ID ${productId} is not a UUID, looking up by slug: ${item.slug}`);
+            const { data: realProduct, error } = await supabase
+              .from('products')
+              .select('id')
+              .eq('slug', item.slug)
+              .single();
+
+            if (error || !realProduct) {
+              console.log(`Product not found in Supabase (slug: ${item.slug}), creating it...`);
+              const created = await saveProductToSupabase(item);
+
+              if (!created) {
+                console.error(`Failed to create product in Supabase: ${item.slug}`);
+                throw new Error(`Failed to create/find product: ${item.slug}`);
+              }
+
+              // Try lookup again
+              const { data: retryProduct, error: retryError } = await supabase
+                .from('products')
+                .select('id')
+                .eq('slug', item.slug)
+                .single();
+
+              if (retryError || !retryProduct) {
+                console.error(`Could not create/find Supabase UUID for product slug: ${item.slug}`, retryError);
+                throw new Error(`Could not create/find product UUID: ${item.slug}`);
+              }
+              productId = retryProduct.id;
+            } else {
+              productId = realProduct.id;
+            }
+          }
+
+          return {
+            order_id: orderData.id,
+            product_id: productId, // Now using UUID
+            product_title: item.title,
+            quantity: item.quantity,
+            price: item.price,
+            image_url: imageUrl
+          };
+        })
+      );
 
       if (!orderItems || orderItems.length === 0) {
         throw new Error('No order items to insert');
