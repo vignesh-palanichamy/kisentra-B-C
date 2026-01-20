@@ -8,7 +8,6 @@ import { getCategories, Category } from '@/api/categories';
 import Products from '@/api/products';
 import { Fade } from 'react-awesome-reveal';
 import Image from 'next/image';
-import { seedAll, seedCategories, seedProducts } from '@/seed-data';
 
 const AdminProductsPage: React.FC = () => {
   const router = useRouter();
@@ -165,24 +164,6 @@ const AdminProductsPage: React.FC = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button
-              onClick={async () => {
-                try {
-                  await seedAll();
-                  await loadProducts();
-                  alert('✅ Seed data loaded successfully!\n\nAdded:\n- 2 Categories (Water Bottle, Tiffin Box)\n- 4 Products (Plastic/Steel Water Bottles & Tiffin Boxes)\n\nRefresh the page to see them.');
-                } catch (error) {
-                  console.error('Error loading seed data:', error);
-                  alert('Error loading seed data. Check console for details.');
-                }
-              }}
-              className="thm-btn thm-btn--border"
-              style={{ padding: '12px 20px' }}
-              title="Load sample products (Water Bottles & Tiffin Boxes)"
-            >
-              <i className="fas fa-seedling" style={{ marginRight: '8px' }}></i>
-              Load Seed Data
-            </button>
             <button
               onClick={() => {
                 setEditingProduct(null);
