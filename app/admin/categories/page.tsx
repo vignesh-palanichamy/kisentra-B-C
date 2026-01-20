@@ -7,6 +7,7 @@ import Scrollbar from '@/components/scrollbar/scrollbar';
 import Link from 'next/link';
 import { getCategories, saveCategory, deleteCategory, Category } from '@/api/categories';
 import { Fade } from 'react-awesome-reveal';
+import { seedCategoriesOnly } from '@/seed-data';
 
 const AdminCategoriesPage = () => {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -106,6 +107,23 @@ const AdminCategoriesPage = () => {
                         <Link href="/admin/dashboard" className="thm-btn thm-btn--border" style={{ padding: '10px 20px', fontSize: '14px' }}>
                             Back to Dashboard
                         </Link>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await seedCategoriesOnly();
+                                    await loadCategories();
+                                    alert('✅ Categories seeded successfully!\n\nAdded:\n- Water Bottle\n- Tiffin Box\n\nRefresh the page to see them.');
+                                } catch (error) {
+                                    console.error('Error loading seed categories:', error);
+                                    alert('Error loading seed categories. Check console for details.');
+                                }
+                            }}
+                            className="thm-btn thm-btn--border"
+                            style={{ padding: '10px 20px', fontSize: '14px' }}
+                            title="Load sample categories (Water Bottle & Tiffin Box)"
+                        >
+                            <i className="fas fa-seedling mr-2"></i> Load Seed Categories
+                        </button>
                         <button
                             onClick={() => {
                                 setFormData({ name: '', slug: '', image_url: '' });

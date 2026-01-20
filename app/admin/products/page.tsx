@@ -8,6 +8,7 @@ import { getCategories, Category } from '@/api/categories';
 import Products from '@/api/products';
 import { Fade } from 'react-awesome-reveal';
 import Image from 'next/image';
+import { seedAll, seedCategories, seedProducts } from '@/seed-data';
 
 const AdminProductsPage: React.FC = () => {
   const router = useRouter();
@@ -163,16 +164,36 @@ const AdminProductsPage: React.FC = () => {
               Manage your product catalog
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingProduct(null);
-              setShowForm(true);
-            }}
-            className="thm-btn thm-btn--aso thm-btn--aso_yellow"
-          >
-            <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
-            Add Product
-          </button>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button
+              onClick={async () => {
+                try {
+                  await seedAll();
+                  await loadProducts();
+                  alert('✅ Seed data loaded successfully!\n\nAdded:\n- 2 Categories (Water Bottle, Tiffin Box)\n- 4 Products (Plastic/Steel Water Bottles & Tiffin Boxes)\n\nRefresh the page to see them.');
+                } catch (error) {
+                  console.error('Error loading seed data:', error);
+                  alert('Error loading seed data. Check console for details.');
+                }
+              }}
+              className="thm-btn thm-btn--border"
+              style={{ padding: '12px 20px' }}
+              title="Load sample products (Water Bottles & Tiffin Boxes)"
+            >
+              <i className="fas fa-seedling" style={{ marginRight: '8px' }}></i>
+              Load Seed Data
+            </button>
+            <button
+              onClick={() => {
+                setEditingProduct(null);
+                setShowForm(true);
+              }}
+              className="thm-btn thm-btn--aso thm-btn--aso_yellow"
+            >
+              <i className="fas fa-plus" style={{ marginRight: '8px' }}></i>
+              Add Product
+            </button>
+          </div>
         </div>
       </Fade>
 
@@ -484,11 +505,14 @@ const ProductForm: React.FC<{
     reviews: product?.reviews,
     features: product?.features || [],
     tags: product?.tags || [],
+    highlights: product?.highlights || {},
     visible: product?.visible ?? true
   });
 
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [newHighlightKey, setNewHighlightKey] = useState('');
+  const [newHighlightValue, setNewHighlightValue] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
@@ -547,6 +571,29 @@ const ProductForm: React.FC<{
     setFormData({
       ...formData,
       tags: formData.tags?.filter((_, i) => i !== index)
+    });
+  };
+
+  const addHighlight = () => {
+    if (newHighlightKey.trim() && newHighlightValue.trim()) {
+      setFormData({
+        ...formData,
+        highlights: {
+          ...(formData.highlights || {}),
+          [newHighlightKey.trim()]: newHighlightValue.trim()
+        }
+      });
+      setNewHighlightKey('');
+      setNewHighlightValue('');
+    }
+  };
+
+  const removeHighlight = (key: string) => {
+    const newHighlights = { ...(formData.highlights || {}) };
+    delete newHighlights[key];
+    setFormData({
+      ...formData,
+      highlights: newHighlights
     });
   };
 
@@ -1121,7 +1168,7 @@ const ProductForm: React.FC<{
                   </div>
                 </div>
 
-                <div className="col-12 mb-20">
+                <div className="col-12 mb-30">
                   <InputLabel>Tags</InputLabel>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                     <input
@@ -1161,6 +1208,71 @@ const ProductForm: React.FC<{
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="col-12 mb-20">
+                  <InputLabel>Highlights / Specifications</InputLabel>
+                  <p style={{ fontSize: '12px', color: '#888', marginBottom: '15px' }}>
+                    Add key specifications that will be displayed in the product highlights section (e.g., Material, Capacity, Weight)
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={newHighlightKey}
+                      placeholder="Key (e.g., 'Material')"
+                      onChange={(e) => setNewHighlightKey(e.target.value)}
+                      style={{
+                        flex: 1, minWidth: '150px', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e7e8ec', fontSize: '15px', outline: 'none'
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={newHighlightValue}
+                      placeholder="Value (e.g., 'Plastic')"
+                      onChange={(e) => setNewHighlightValue(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && newHighlightKey && newHighlightValue && (e.preventDefault(), addHighlight())}
+                      style={{
+                        flex: 1, minWidth: '150px', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e7e8ec', fontSize: '15px', outline: 'none'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addHighlight}
+                      className="thm-btn"
+                      style={{ padding: '0 25px', borderRadius: '8px', whiteSpace: 'nowrap' }}
+                      disabled={!newHighlightKey || !newHighlightValue}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {formData.highlights && Object.entries(formData.highlights).map(([key, value]) => (
+                      <div key={key} style={{
+                        padding: '12px 15px', backgroundColor: '#f0f4f8', border: '1px solid #e7e8ec', borderRadius: '8px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px'
+                      }}>
+                        <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <strong style={{ minWidth: '120px', color: '#555' }}>{key}:</strong>
+                          <span style={{ color: '#333' }}>{value}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeHighlight(key)}
+                          style={{ border: 'none', background: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: '16px', padding: '5px' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#c62828'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#ff4d4f'}
+                          title="Remove highlight"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {(!formData.highlights || Object.keys(formData.highlights).length === 0) && (
+                      <span style={{ color: '#999', fontSize: '14px', fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>
+                        No highlights added yet. Add key specifications like Material, Capacity, Weight, etc.
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

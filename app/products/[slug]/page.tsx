@@ -51,7 +51,7 @@ const ProductDetailPage: React.FC = () => {
   const [addedToCart, setAddedToCart] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
-  const [activeTab, setActiveTab] = useState('Description');
+  const [activeTab, setActiveTab] = useState('Overview');
   const [showLightbox, setShowLightbox] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
@@ -95,12 +95,20 @@ const ProductDetailPage: React.FC = () => {
 
     const selectedImage = product.images[selectedImageIndex] || product.images[0];
     if (typeof selectedImage === 'string') {
-      return selectedImage;
+      // Validate it's a proper URL or path
+      if (selectedImage.startsWith('http') || selectedImage.startsWith('//') || selectedImage.startsWith('data:') || selectedImage.startsWith('/')) {
+        return selectedImage;
+      }
+      return '/images/placeholder.jpg';
     }
 
     // Handle StaticImageData or object with src property
     if (selectedImage && typeof selectedImage === 'object') {
-      return (selectedImage as any).src || selectedImage;
+      const src = (selectedImage as any).src || 
+                  (selectedImage as any).default?.src || 
+                  (selectedImage as any).default ||
+                  null;
+      return src || '/images/placeholder.jpg';
     }
 
     return '/images/placeholder.jpg'; // Final fallback
@@ -220,18 +228,38 @@ const ProductDetailPage: React.FC = () => {
                       setZoomPosition({ x, y });
                     }}
                   >
-                    <Image
-                      src={mainImage}
-                      alt={product.title}
-                      fill
-                      style={{
-                        objectFit: 'contain',
-                        transform: isZoomed ? `scale(2)` : 'scale(1)',
-                        transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                        transition: isZoomed ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                        cursor: 'zoom-in'
-                      }}
-                    />
+                    {mainImage.startsWith('data:') || mainImage.startsWith('blob:') ? (
+                      <img
+                        src={mainImage}
+                        alt={product.title}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          transform: isZoomed ? `scale(2)` : 'scale(1)',
+                          transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                          transition: isZoomed ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          cursor: 'zoom-in'
+                        }}
+                      />
+                    ) : (
+                      <Image
+                        src={mainImage}
+                        alt={product.title}
+                        fill
+                        style={{
+                          objectFit: 'contain',
+                          transform: isZoomed ? `scale(2)` : 'scale(1)',
+                          transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                          transition: isZoomed ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          cursor: 'zoom-in'
+                        }}
+                        unoptimized={mainImage.startsWith('http') && !mainImage.includes('supabase.co')}
+                      />
+                    )}
 
                     {/* Overlay Icons */}
                     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', flexDirection: 'column', gap: '15px', zIndex: 5 }}>
@@ -258,95 +286,492 @@ const ProductDetailPage: React.FC = () => {
                   {/* Thumbnails Row */}
                   {product.images && product.images.length > 0 && (
                     <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '10px 0', justifyContent: 'center' }}>
-                      {product.images.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedImageIndex(idx)}
-                          style={{
-                            width: '80px',
-                            height: '80px',
-                            border: selectedImageIndex === idx ? '2px solid #0046be' : '1px solid #e0e6ef',
-                            borderRadius: '8px',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            background: '#fff',
-                            padding: '5px',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <Image
-                            src={typeof img === 'string' ? img : (img as any).src || '/images/placeholder.jpg'}
-                            alt="thumbnail"
-                            fill
-                            style={{ objectFit: 'contain', padding: '5px' }}
-                          />
-                        </button>
-                      ))}
+                      {product.images.map((img, idx) => {
+                        // Safely extract image source
+                        let imgSrc: string = '/images/placeholder.jpg';
+                        if (typeof img === 'string') {
+                          imgSrc = img;
+                        } else if (img && typeof img === 'object') {
+                          imgSrc = (img as any).src || 
+                                   (img as any).default?.src || 
+                                   (img as any).default || 
+                                   '/images/placeholder.jpg';
+                        }
+                        
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedImageIndex(idx)}
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              border: selectedImageIndex === idx ? '2px solid #0046be' : '1px solid #e0e6ef',
+                              borderRadius: '8px',
+                              position: 'relative',
+                              cursor: 'pointer',
+                              background: '#fff',
+                              padding: '5px',
+                              transition: 'all 0.2s',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {imgSrc.startsWith('data:') || imgSrc.startsWith('blob:') ? (
+                              <img
+                                src={imgSrc}
+                                alt="thumbnail"
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'contain',
+                                  padding: '5px'
+                                }}
+                              />
+                            ) : (
+                              <Image
+                                src={imgSrc}
+                                alt="thumbnail"
+                                fill
+                                style={{ objectFit: 'contain', padding: '5px' }}
+                                unoptimized={imgSrc.startsWith('http') && !imgSrc.includes('supabase.co')}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
                 {/* Below The Fold - Tabs/Overview */}
                 <div style={{ marginTop: '60px' }}>
-                  <div style={{ borderBottom: '1px solid #c5cbd5', marginBottom: '30px', display: 'flex', gap: '40px' }}>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      borderBottom: '3px solid #0046be',
-                      paddingBottom: '10px',
-                      marginBottom: '-2px',
-                      color: '#040c13',
-                      cursor: 'pointer'
-                    }}>Overview</h3>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      paddingBottom: '10px',
-                      color: '#555',
-                      cursor: 'pointer'
-                    }}>Specifications</h3>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      paddingBottom: '10px',
-                      color: '#555',
-                      cursor: 'pointer'
-                    }}>Reviews ({product.reviews || 85})</h3>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      paddingBottom: '10px',
-                      color: '#555',
-                      cursor: 'pointer'
-                    }}>Q&A</h3>
+                  {/* Tab Navigation */}
+                  <div style={{ 
+                    borderBottom: '2px solid #e0e6ef', 
+                    marginBottom: '40px', 
+                    display: 'flex', 
+                    gap: '40px', 
+                    flexWrap: 'wrap' 
+                  }}>
+                    {['Overview', 'Specifications', 'Reviews', 'Q&A'].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: activeTab === tab ? '700' : '500',
+                          paddingBottom: '12px',
+                          marginBottom: '-2px',
+                          color: activeTab === tab ? '#0046be' : '#555',
+                          cursor: 'pointer',
+                          background: 'none',
+                          border: 'none',
+                          borderBottom: activeTab === tab ? '3px solid #0046be' : '3px solid transparent',
+                          transition: 'all 0.2s',
+                          position: 'relative'
+                        }}
+                      >
+                        {tab === 'Reviews' ? `${tab} (${product.reviews || 85})` : tab}
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="row">
-                    <div className="col-lg-8">
-                      <div style={{ marginBottom: '40px' }}>
-                        <h4 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px', color: '#040c13' }}>Description</h4>
-                        <div style={{ fontSize: '16px', lineHeight: '1.6', color: '#1d252c' }}>
-                          {product.longDescription ? (
-                            <div dangerouslySetInnerHTML={{ __html: product.longDescription }} />
+                  {/* Tab Content */}
+                  {activeTab === 'Overview' && (
+                    <div className="row">
+                      <div className="col-lg-12">
+                        {/* Highlights Section - Top Priority */}
+                        {product.highlights && Object.keys(product.highlights).length > 0 && (
+                          <div style={{
+                            backgroundColor: '#fff',
+                            border: '2px solid #e0e6ef',
+                            borderRadius: '16px',
+                            padding: '35px',
+                            marginBottom: '40px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              marginBottom: '25px',
+                              paddingBottom: '20px',
+                              borderBottom: '2px solid #f0f2f4'
+                            }}>
+                              <div style={{
+                                width: '48px',
+                                height: '48px',
+                                borderRadius: '12px',
+                                background: 'linear-gradient(135deg, #0046be 0%, #0066ff 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 12px rgba(0,70,190,0.2)'
+                              }}>
+                                <i className="fas fa-star" style={{ color: '#fff', fontSize: '20px' }}></i>
+                              </div>
+                              <h4 style={{
+                                fontSize: '24px',
+                                fontWeight: '700',
+                                color: '#040c13',
+                                margin: 0
+                              }}>Key Highlights</h4>
+                            </div>
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                              gap: '20px'
+                            }}>
+                              {Object.entries(product.highlights).map(([key, value]) => (
+                                <div key={key} style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  padding: '20px',
+                                  backgroundColor: '#f8f9fa',
+                                  borderRadius: '12px',
+                                  border: '1px solid #e0e6ef',
+                                  transition: 'all 0.3s ease',
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-4px)';
+                                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,70,190,0.12)';
+                                  e.currentTarget.style.borderColor = '#0046be';
+                                  e.currentTarget.style.backgroundColor = '#fff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                  e.currentTarget.style.borderColor = '#e0e6ef';
+                                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                }}
+                                >
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '4px',
+                                    height: '100%',
+                                    background: 'linear-gradient(180deg, #0046be 0%, #0066ff 100%)',
+                                    opacity: 0,
+                                    transition: 'opacity 0.3s'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.opacity = '1';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.opacity = '0';
+                                  }}
+                                  ></div>
+                                  <span style={{
+                                    fontSize: '12px',
+                                    color: '#6c757d',
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    marginBottom: '10px'
+                                  }}>{key}</span>
+                                  <strong style={{
+                                    fontSize: '18px',
+                                    color: '#040c13',
+                                    fontWeight: '700',
+                                    lineHeight: '1.4'
+                                  }}>{value}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Description Section */}
+                        <div style={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e6ef',
+                          borderRadius: '16px',
+                          padding: '35px',
+                          marginBottom: '40px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        }}>
+                          <h4 style={{
+                            fontSize: '26px',
+                            fontWeight: '700',
+                            marginBottom: '25px',
+                            color: '#040c13',
+                            paddingBottom: '20px',
+                            borderBottom: '2px solid #f0f2f4',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                          }}>
+                            <i className="fas fa-info-circle" style={{ color: '#0046be', fontSize: '24px' }}></i>
+                            Description
+                          </h4>
+                          <div style={{
+                            fontSize: '16px',
+                            lineHeight: '1.8',
+                            color: '#1d252c'
+                          }}>
+                            {product.longDescription ? (
+                              <div dangerouslySetInnerHTML={{ __html: product.longDescription }} />
+                            ) : (
+                              <p style={{ margin: 0 }}>{product.description}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Features Section */}
+                        {product.features && product.features.length > 0 && (
+                          <div style={{
+                            backgroundColor: '#fff',
+                            border: '1px solid #e0e6ef',
+                            borderRadius: '16px',
+                            padding: '35px',
+                            marginBottom: '40px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              marginBottom: '25px',
+                              paddingBottom: '20px',
+                              borderBottom: '2px solid #f0f2f4'
+                            }}>
+                              <div style={{
+                                width: '48px',
+                                height: '48px',
+                                borderRadius: '12px',
+                                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 12px rgba(40,167,69,0.2)'
+                              }}>
+                                <i className="fas fa-check-circle" style={{ color: '#fff', fontSize: '20px' }}></i>
+                              </div>
+                              <h4 style={{
+                                fontSize: '24px',
+                                fontWeight: '700',
+                                color: '#040c13',
+                                margin: 0
+                              }}>Features</h4>
+                            </div>
+                            <ul style={{
+                              padding: 0,
+                              listStyle: 'none',
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                              gap: '16px'
+                            }}>
+                              {product.features.map((f, i) => (
+                                <li key={i} style={{
+                                  display: 'flex',
+                                  gap: '14px',
+                                  alignItems: 'flex-start',
+                                  padding: '16px',
+                                  backgroundColor: '#f8f9fa',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e0e6ef',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#e9ecef';
+                                  e.currentTarget.style.borderColor = '#28a745';
+                                  e.currentTarget.style.transform = 'translateX(4px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                  e.currentTarget.style.borderColor = '#e0e6ef';
+                                  e.currentTarget.style.transform = 'translateX(0)';
+                                }}
+                                >
+                                  <div style={{
+                                    minWidth: '24px',
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                    marginTop: '2px',
+                                    boxShadow: '0 2px 6px rgba(40,167,69,0.3)'
+                                  }}>
+                                    <i className="fas fa-check" style={{
+                                      color: '#fff',
+                                      fontSize: '12px'
+                                    }}></i>
+                                  </div>
+                                  <span style={{
+                                    fontSize: '15px',
+                                    color: '#1d252c',
+                                    lineHeight: '1.6',
+                                    fontWeight: '500'
+                                  }}>{f}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'Specifications' && (
+                    <div className="row">
+                      <div className="col-lg-12">
+                        <div style={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e6ef',
+                          borderRadius: '16px',
+                          padding: '35px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        }}>
+                          <h4 style={{
+                            fontSize: '26px',
+                            fontWeight: '700',
+                            marginBottom: '30px',
+                            color: '#040c13',
+                            paddingBottom: '20px',
+                            borderBottom: '2px solid #f0f2f4',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                          }}>
+                            <i className="fas fa-list-alt" style={{ color: '#0046be', fontSize: '24px' }}></i>
+                            Technical Specifications
+                          </h4>
+                          
+                          {product.highlights && Object.keys(product.highlights).length > 0 ? (
+                            <div style={{
+                              border: '1px solid #e0e6ef',
+                              borderRadius: '12px',
+                              overflow: 'hidden'
+                            }}>
+                              <table style={{
+                                width: '100%',
+                                borderCollapse: 'collapse'
+                              }}>
+                                <tbody>
+                                  {Object.entries(product.highlights || {}).map(([key, value], index, array) => (
+                                    <tr key={key} style={{
+                                      borderBottom: index < array.length - 1 ? '1px solid #e0e6ef' : 'none',
+                                      backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa',
+                                      transition: 'background-color 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#e9ecef';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#fff' : '#f8f9fa';
+                                    }}
+                                    >
+                                      <td style={{
+                                        padding: '20px 24px',
+                                        fontSize: '15px',
+                                        fontWeight: '700',
+                                        color: '#040c13',
+                                        width: '35%',
+                                        borderRight: '1px solid #e0e6ef',
+                                        background: index % 2 === 0 ? '#f8f9fa' : '#fff'
+                                      }}>{key}</td>
+                                      <td style={{
+                                        padding: '20px 24px',
+                                        fontSize: '15px',
+                                        color: '#1d252c',
+                                        fontWeight: '500'
+                                      }}>{value}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           ) : (
-                            <p>{product.description}</p>
+                            <p style={{ color: '#6c757d', fontSize: '16px', textAlign: 'center', padding: '40px' }}>
+                              No specifications available.
+                            </p>
                           )}
                         </div>
                       </div>
+                    </div>
+                  )}
 
-                      <div style={{ backgroundColor: '#f0f2f4', padding: '30px', borderRadius: '12px' }}>
-                        <h4 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Features</h4>
-                        <ul style={{ padding: 0, listStyle: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
-                          {product.features?.map((f, i) => (
-                            <li key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                              <i className="fas fa-check-circle" style={{ color: '#0046be', marginTop: '4px' }}></i>
-                              <span style={{ fontSize: '15px' }}>{f}</span>
-                            </li>
-                          ))}
-                        </ul>
+                  {activeTab === 'Reviews' && (
+                    <div className="row">
+                      <div className="col-lg-12">
+                        <div style={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e6ef',
+                          borderRadius: '16px',
+                          padding: '60px',
+                          textAlign: 'center',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        }}>
+                          <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #0046be 0%, #0066ff 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 25px',
+                            boxShadow: '0 4px 16px rgba(0,70,190,0.2)'
+                          }}>
+                            <i className="fas fa-comments" style={{ fontSize: '36px', color: '#fff' }}></i>
+                          </div>
+                          <h4 style={{
+                            fontSize: '24px',
+                            fontWeight: '700',
+                            marginBottom: '15px',
+                            color: '#040c13'
+                          }}>Customer Reviews</h4>
+                          <p style={{ color: '#6c757d', fontSize: '16px', margin: 0 }}>
+                            Reviews coming soon. Be the first to review this product!
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {activeTab === 'Q&A' && (
+                    <div className="row">
+                      <div className="col-lg-12">
+                        <div style={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e6ef',
+                          borderRadius: '16px',
+                          padding: '60px',
+                          textAlign: 'center',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        }}>
+                          <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 25px',
+                            boxShadow: '0 4px 16px rgba(255,193,7,0.2)'
+                          }}>
+                            <i className="fas fa-question-circle" style={{ fontSize: '36px', color: '#fff' }}></i>
+                          </div>
+                          <h4 style={{
+                            fontSize: '24px',
+                            fontWeight: '700',
+                            marginBottom: '15px',
+                            color: '#040c13'
+                          }}>Questions & Answers</h4>
+                          <p style={{ color: '#6c757d', fontSize: '16px', margin: 0 }}>
+                            No questions yet. Ask a question about this product!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -440,25 +865,21 @@ const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Mini Specs */}
-                  <div style={{ backgroundColor: '#f9f9fb', margin: '20px -24px -24px', padding: '20px', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', borderTop: '1px solid #e0e6ef' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>Highlights</h4>
-                    <ul style={{ padding: 0, listStyle: 'none', fontSize: '13px' }}>
-                      <li style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#555' }}>Screen</span>
-                        <strong>14" OLED</strong>
-                      </li>
-                      <li style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#555' }}>CPU</span>
-                        <strong>Intel Core Ultra 9</strong>
-                      </li>
-                      <li style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#555' }}>RAM</span>
-                        <strong>32GB</strong>
-                      </li>
-                    </ul>
-                    <a href="#" style={{ display: 'block', textAlign: 'center', color: '#0046be', fontSize: '13px', fontWeight: '600', marginTop: '15px' }}>See all specifications</a>
-                  </div>
+                  {/* Mini Specs / Highlights */}
+                  {product.highlights && Object.keys(product.highlights).length > 0 && (
+                    <div style={{ backgroundColor: '#f9f9fb', margin: '20px -24px -24px', padding: '20px', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', borderTop: '1px solid #e0e6ef' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>Highlights</h4>
+                      <ul style={{ padding: 0, listStyle: 'none', fontSize: '13px' }}>
+                        {Object.entries(product.highlights).map(([key, value]) => (
+                          <li key={key} style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#555' }}>{key}</span>
+                            <strong>{value}</strong>
+                          </li>
+                        ))}
+                      </ul>
+                      <a href="#" style={{ display: 'block', textAlign: 'center', color: '#0046be', fontSize: '13px', fontWeight: '600', marginTop: '15px' }}>See all specifications</a>
+                    </div>
+                  )}
                 </div>
               </div>
 

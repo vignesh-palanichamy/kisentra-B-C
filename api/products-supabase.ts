@@ -63,6 +63,7 @@ export const getProductsFromSupabase = async (): Promise<Product[]> => {
       reviews: item.reviews || undefined,
       features: item.features || [],
       tags: item.tags || [],
+      highlights: item.highlights || {},
       visible: item.is_active !== false,
     }));
   } catch (error: any) {
@@ -87,7 +88,8 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
   }
 
   try {
-    const productData: any = {
+    // Build base product data without highlights first
+    const baseProductData: any = {
       title: product.title,
       slug: product.slug,
       price: product.price,
@@ -106,6 +108,12 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
       tags: product.tags || [],
       is_active: product.visible !== false,
       updated_at: new Date().toISOString(),
+    };
+
+    // Try with highlights first, fallback without if column doesn't exist
+    const productDataWithHighlights = {
+      ...baseProductData,
+      highlights: product.highlights || {},
     };
 
     let existingId: string | undefined;
@@ -137,33 +145,83 @@ export const saveProductToSupabase = async (product: Partial<Product>): Promise<
       }
     }
 
-    if (existingId) {
-      // Update existing product
-      const { error } = await supabase
-        .from('products')
-        .update(productData)
-        .eq('id', existingId);
-
-      if (error) {
-        console.error('Error updating product:', error);
-        return false;
+    // Helper function to attempt save
+    const attemptSave = async (dataToSave: any, isUpdate: boolean): Promise<{ success: boolean; isColumnError: boolean }> => {
+      let result: any;
+      
+      if (isUpdate) {
+        result = await supabase
+          .from('products')
+          .update(dataToSave)
+          .eq('id', existingId!)
+          .select();
+      } else {
+        result = await supabase
+          .from('products')
+          .insert([dataToSave])
+          .select();
       }
-    } else {
-      // Insert new product
-      const { error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select();
 
-      if (error) {
-        console.error('Error inserting product:', error);
-        return false;
+      if (result.error) {
+        const error = result.error;
+        const isColumnError = error.message?.includes('column') && 
+                             (error.message?.includes('not found') || 
+                              error.message?.includes('does not exist') ||
+                              error.message?.includes('highlights'));
+        
+        if (isColumnError) {
+          return { success: false, isColumnError: true };
+        }
+        
+        // Other errors - log and return
+        let errorString = 'Unable to serialize error';
+        try {
+          errorString = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+        } catch (e) {
+          errorString = `Error object: ${error.toString()}`;
+        }
+        
+        console.error(`❌ Error ${isUpdate ? 'updating' : 'inserting'} product:`, {
+          message: error.message || 'No error message',
+          code: error.code || 'No error code',
+          details: error.details || 'No details',
+          hint: error.hint || 'No hint',
+          productId: existingId,
+          productSlug: product.slug,
+          productTitle: product.title,
+          fullError: errorString
+        });
+        
+        return { success: false, isColumnError: false };
       }
+      
+      if (result.data && result.data.length > 0) {
+        console.log(`✅ Product "${product.title}" ${isUpdate ? 'updated' : 'inserted'} successfully`);
+      }
+      
+      return { success: true, isColumnError: false };
+    };
+
+    const isUpdate = !!existingId;
+    
+    // Try with highlights first
+    let saveResult = await attemptSave(productDataWithHighlights, isUpdate);
+    
+    // If it failed due to missing column, retry without highlights
+    if (!saveResult.success && saveResult.isColumnError) {
+      console.warn(`⚠️ Highlights column not found, saving without highlights for "${product.title}"`);
+      console.warn('💡 Run supabase_products_highlights.sql to enable highlights feature');
+      saveResult = await attemptSave(baseProductData, isUpdate);
     }
 
-    return true;
-  } catch (error) {
-    console.error('Error in saveProductToSupabase:', error);
+    return saveResult.success;
+  } catch (error: any) {
+    console.error('❌ Error in saveProductToSupabase:', {
+      message: error?.message || 'Unknown error',
+      name: error?.name,
+      stack: error?.stack,
+      fullError: error
+    });
     return false;
   }
 };
