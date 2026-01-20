@@ -204,80 +204,68 @@ const ProductDetailPage: React.FC = () => {
     <Fragment>
       <div className='body_wrap sco_agency'>
         <Header />
-        <main className="page_content" style={{ backgroundColor: '#fff', paddingBottom: '80px', paddingTop: '160px', fontFamily: 'Inter, sans-serif' }}>
+        <main className="page_content" style={{ backgroundColor: '#fff', paddingBottom: '60px', paddingTop: '100px', fontFamily: 'Inter, sans-serif', minHeight: 'calc(100vh - 200px)' }}>
 
-          {/* Breadcrumb - Clean & Simple */}
-          <div style={{ borderBottom: '1px solid #e0e6ef', padding: '15px 0' }}>
-            <div className="container" style={{ maxWidth: '1600px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <nav aria-label="breadcrumb">
-                <ol className="breadcrumb" style={{ margin: 0, padding: 0, fontSize: '13px', background: 'transparent', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <li className="breadcrumb-item"><Link href="/" style={{ color: '#0046be', textDecoration: 'none', fontWeight: '500' }}>Home</Link></li>
-                  <li style={{ color: '#c5cbd5', fontSize: '12px' }}><i className="fas fa-chevron-right"></i></li>
-                  <li className="breadcrumb-item"><Link href="/products" style={{ color: '#0046be', textDecoration: 'none', fontWeight: '500' }}>{product.category || 'Products'}</Link></li>
-                  <li style={{ color: '#c5cbd5', fontSize: '12px' }}><i className="fas fa-chevron-right"></i></li>
-                  <li className="breadcrumb-item active" aria-current="page" style={{ color: '#20262e', fontWeight: '600' }}>{product.title}</li>
-                </ol>
-              </nav>
-              {/* Share / Print icons could go here */}
-            </div>
-          </div>
-
-          <div className="container" style={{ maxWidth: '1600px', marginTop: '30px' }}>
+          <div className="container" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 20px', marginTop: '40px', position: 'relative', zIndex: 1 }}>
 
             {/* Header Info Section - Title & Ratings */}
-            <div className="row mb-30">
+            <div className="row" style={{ marginBottom: '48px' }}>
               <div className="col-12">
                 <h1 style={{
-                  fontSize: '32px',
-                  fontWeight: '700',
-                  color: '#040c13',
-                  marginBottom: '15px',
-                  lineHeight: '1.2'
+                  fontSize: '36px',
+                  fontWeight: '300',
+                  letterSpacing: '-0.5px',
+                  color: '#0a0e27',
+                  marginBottom: '32px',
+                  marginTop: '24px',
+                  lineHeight: '1.2',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
                 }}>
                   {product.title}
                 </h1>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', fontSize: '14px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{ color: '#ffe000', fontSize: '14px', WebkitTextStroke: '1px #bca500' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '13px', flexWrap: 'wrap', marginBottom: '16px', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ color: '#ffc107', fontSize: '14px' }}>
                       {[...Array(5)].map((_, i) => (
                         <i key={i} className={`fa${i < Math.floor(product.rating || 4) ? 's' : 'r'} fa-star`} />
                       ))}
                     </div>
-                    <strong style={{ color: '#040c13', marginLeft: '5px' }}>{product.rating || '4.8'}</strong>
-                    <span style={{ color: '#0046be', cursor: 'pointer', fontWeight: '500' }}>({product.reviews || 85} Reviews)</span>
-                    <span style={{ margin: '0 8px', color: '#c5cbd5' }}>|</span>
-                    <span style={{ color: '#0046be', fontWeight: '600', cursor: 'pointer' }}>Answered Questions</span>
+                    <strong style={{ color: '#0a0e27', marginLeft: '4px', fontWeight: '400' }}>{product.rating || '4.8'}</strong>
+                    <span style={{ color: '#0f55dc', cursor: 'pointer', fontWeight: '400', letterSpacing: '0.2px' }}>({product.reviews || 85} Reviews)</span>
+                    <span style={{ margin: '0 8px', color: 'rgba(15, 85, 220, 0.3)' }}>|</span>
+                    <span style={{ color: '#0f55dc', fontWeight: '400', cursor: 'pointer', letterSpacing: '0.2px' }}>Answered Questions</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '20px', color: '#555' }}>
+                  <div style={{ display: 'flex', gap: '20px', color: '#4a5568', fontSize: '12px', letterSpacing: '0.2px' }}>
                     <div>
-                      <strong>Model:</strong> {product.Id ? product.Id.substring(0, 8).toUpperCase() : 'N/A'}
+                      <strong style={{ fontWeight: '400' }}>Model:</strong> {product.Id ? product.Id.substring(0, 8).toUpperCase() : 'N/A'}
                     </div>
                     <div>
-                      <strong>SKU:</strong> {Math.floor(Math.random() * 1000000)}
+                      <strong style={{ fontWeight: '400' }}>SKU:</strong> {Math.floor(Math.random() * 1000000)}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="row">
+            <div className="row" style={{ marginTop: '32px' }}>
 
               {/* LEFT COLUMN: Image Gallery (Larger Column 7 or 8) */}
-              <div className="col-lg-8">
+              <div className="col-lg-8" style={{ paddingLeft: '15px', paddingRight: '15px' }}>
                 <div style={{
                   position: 'relative',
-                  marginBottom: '30px'
+                  marginBottom: '40px'
                 }}>
                   {/* Main Image Container */}
                   <div className="main-image-container" style={{
                     position: 'relative',
                     width: '100%',
-                    height: '600px',
-                    marginBottom: '20px',
+                    height: '520px',
+                    marginBottom: '32px',
                     backgroundColor: '#fff',
-                    borderRadius: '8px',
+                    borderRadius: '0',
+                    border: '1px solid rgba(15, 85, 220, 0.08)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -350,7 +338,7 @@ const ProductDetailPage: React.FC = () => {
 
                   {/* Thumbnails Row */}
                   {product.images && product.images.length > 0 && (
-                    <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '10px 0', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '16px 0', justifyContent: 'center', marginBottom: '32px' }}>
                       {product.images.map((img, idx) => {
                         // Safely extract image source
                         let imgSrc: string = '/images/placeholder.jpg';
@@ -370,13 +358,13 @@ const ProductDetailPage: React.FC = () => {
                             style={{
                               width: '80px',
                               height: '80px',
-                              border: selectedImageIndex === idx ? '2px solid #0046be' : '1px solid #e0e6ef',
-                              borderRadius: '8px',
+                              border: selectedImageIndex === idx ? '2px solid #0f55dc' : '1px solid rgba(15, 85, 220, 0.15)',
+                              borderRadius: '0',
                               position: 'relative',
                               cursor: 'pointer',
                               background: '#fff',
                               padding: '5px',
-                              transition: 'all 0.2s',
+                              transition: 'all 0.25s',
                               overflow: 'hidden'
                             }}
                           >
@@ -408,14 +396,15 @@ const ProductDetailPage: React.FC = () => {
                 </div>
 
                 {/* Below The Fold - Tabs/Overview */}
-                <div style={{ marginTop: '60px' }}>
+                <div style={{ marginTop: '64px', paddingTop: '40px', borderTop: '1px solid rgba(15, 85, 220, 0.1)' }}>
                   {/* Tab Navigation */}
                   <div style={{ 
-                    borderBottom: '2px solid #e0e6ef', 
-                    marginBottom: '40px', 
+                    borderBottom: '1px solid rgba(15, 85, 220, 0.1)', 
+                    marginBottom: '48px', 
                     display: 'flex', 
                     gap: '40px', 
-                    flexWrap: 'wrap' 
+                    flexWrap: 'wrap',
+                    paddingBottom: '4px'
                   }}>
                     {['Overview', 'Specifications', 'Reviews', 'Q&A'].map((tab) => (
                       <button
@@ -842,30 +831,31 @@ const ProductDetailPage: React.FC = () => {
               </div>
 
               {/* RIGHT COLUMN: Buy Box (Sticky if possible) */}
-              <div className="col-lg-4">
+              <div className="col-lg-4" style={{ paddingLeft: '15px', paddingRight: '15px' }}>
                 <div style={{
-                  border: '1px solid #e0e6ef',
-                  borderRadius: '8px',
-                  padding: '24px',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                  border: '1px solid rgba(15, 85, 220, 0.1)',
+                  borderRadius: '0',
+                  padding: '42px 38px',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 2px 8px rgba(15, 85, 220, 0.08)',
                   position: 'sticky',
-                  top: '120px'
+                  top: '120px',
+                  transition: 'box-shadow 0.3s ease'
                 }}>
 
                   {/* Price Info */}
-                  <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #e0e6ef' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span style={{ fontSize: '36px', fontWeight: '800', color: '#040c13' }}>
+                  <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(15, 85, 220, 0.1)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                      <span style={{ fontSize: '42px', fontWeight: '300', color: '#0a0e27', letterSpacing: '-0.5px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
                         ₹{product.price.toLocaleString()}
                       </span>
                     </div>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <div style={{ display: 'flex', flexDirection: 'column', marginTop: '5px' }}>
-                        <span style={{ fontSize: '14px', color: '#555' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
+                        <span style={{ fontSize: '13px', color: '#9ca3af', letterSpacing: '0.2px' }}>
                           Was <span style={{ textDecoration: 'line-through' }}>₹{product.originalPrice.toLocaleString()}</span>
                         </span>
-                        <span style={{ fontSize: '14px', color: '#b1110e', fontWeight: '700', marginTop: '2px' }}>
+                        <span style={{ fontSize: '13px', color: '#0f55dc', fontWeight: '400', marginTop: '4px', letterSpacing: '0.3px' }}>
                           Save ₹{(product.originalPrice - product.price).toLocaleString()}
                         </span>
                       </div>
@@ -873,44 +863,44 @@ const ProductDetailPage: React.FC = () => {
                   </div>
 
                   {/* Fulfillment */}
-                  <div style={{ marginBottom: '25px' }}>
-                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: '24px', textAlign: 'center' }}>
-                        <i className="fas fa-store" style={{ fontSize: '20px', color: '#040c13' }}></i>
+                  <div style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', gap: '18px', marginBottom: '24px', alignItems: 'flex-start', paddingBottom: '24px', borderBottom: '1px solid rgba(15, 85, 220, 0.08)' }}>
+                      <div style={{ minWidth: '20px', textAlign: 'center' }}>
+                        <i className="fas fa-store" style={{ fontSize: '16px', color: '#0f55dc' }}></i>
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '15px', marginBottom: '2px' }}>Pickup</strong>
-                        <span style={{ color: '#138a0c', fontWeight: '600', fontSize: '13px' }}>Order now for pickup tomorrow</span>
-                        <div style={{ fontSize: '12px', color: '#555' }}>at <a href="#" style={{ color: '#0046be', fontWeight: '600', textDecoration: 'underline' }}>Nearby Store</a></div>
+                        <strong style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '400', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#4a5568' }}>Pickup</strong>
+                        <span style={{ color: '#0f55dc', fontWeight: '400', fontSize: '13px', letterSpacing: '0.2px' }}>Order now for pickup tomorrow</span>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>at <a href="#" style={{ color: '#0f55dc', fontWeight: '400', textDecoration: 'none', letterSpacing: '0.2px' }}>Nearby Store</a></div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: '24px', textAlign: 'center' }}>
-                        <i className="fas fa-truck" style={{ fontSize: '20px', color: '#040c13' }}></i>
+                    <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
+                      <div style={{ minWidth: '20px', textAlign: 'center' }}>
+                        <i className="fas fa-truck" style={{ fontSize: '16px', color: '#0f55dc' }}></i>
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '15px', marginBottom: '2px' }}>Shipping</strong>
+                        <strong style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '400', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#4a5568' }}>Shipping</strong>
                         {userPincode ? (
                           <>
-                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping to <span style={{ color: '#0046be', fontWeight: '600' }}>Pincode {userPincode}</span></span>
+                            <span style={{ color: '#0a0e27', fontSize: '13px', letterSpacing: '0.2px' }}>Free Shipping to <span style={{ color: '#0f55dc', fontWeight: '400' }}>Pincode {userPincode}</span></span>
                             {deliveryDate && (
-                              <div style={{ fontSize: '12px', color: '#555' }}>Get it by <strong>{deliveryDate}</strong></div>
+                              <div style={{ fontSize: '12px', color: '#4a5568', marginTop: '2px', letterSpacing: '0.1px' }}>Get it by <strong style={{ fontWeight: '400', color: '#0a0e27' }}>{deliveryDate}</strong></div>
                             )}
                           </>
                         ) : user ? (
                           <>
-                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping</span>
-                            <div style={{ fontSize: '12px', color: '#555' }}>
-                              <Link href="/account/addresses/add" style={{ color: '#0046be', textDecoration: 'underline' }}>
+                            <span style={{ color: '#0a0e27', fontSize: '13px', letterSpacing: '0.2px' }}>Free Shipping</span>
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                              <Link href="/account/addresses/add" style={{ color: '#0f55dc', textDecoration: 'none', letterSpacing: '0.2px' }}>
                                 Add address to see delivery date
                               </Link>
                             </div>
                           </>
                         ) : (
                           <>
-                            <span style={{ color: '#040c13', fontSize: '13px' }}>Free Shipping</span>
-                            <div style={{ fontSize: '12px', color: '#555' }}>
-                              <Link href="/auth" style={{ color: '#0046be', textDecoration: 'underline' }}>
+                            <span style={{ color: '#0a0e27', fontSize: '13px', letterSpacing: '0.2px' }}>Free Shipping</span>
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                              <Link href="/auth" style={{ color: '#0f55dc', textDecoration: 'none', letterSpacing: '0.2px' }}>
                                 Login to see delivery date
                               </Link>
                             </div>
@@ -921,36 +911,50 @@ const ProductDetailPage: React.FC = () => {
                   </div>
 
                   {/* Main Actions */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '25px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '40px' }}>
                     <button
                       onClick={handleAddToCart}
                       className="hover-brightness"
                       style={{
                         width: '100%',
-                        backgroundColor: '#ffe000', // Matches Best Buy primary CTA
-                        color: '#040c13',
-                        fontWeight: '700',
+                        backgroundColor: '#0f55dc',
+                        color: '#ffffff',
+                        fontWeight: '400',
+                        letterSpacing: '1.2px',
+                        textTransform: 'uppercase',
                         border: 'none',
-                        padding: '16px',
-                        borderRadius: '4px',
-                        fontSize: '16px',
+                        padding: '18px 24px',
+                        borderRadius: '0',
+                        fontSize: '13px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                         cursor: 'pointer',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#0d47b8';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 85, 220, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#0f55dc';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      <i className="fas fa-shopping-cart"></i>
+                      <i className="fas fa-shopping-cart" style={{ fontSize: '14px' }}></i>
                       {addedToCart ? 'Added to Cart' : 'Add to Cart'}
                     </button>
                   </div>
 
                   {/* Secondary Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', borderTop: '1px solid #e0e6ef', paddingTop: '20px' }}>
-                    <button style={{ background: 'none', border: 'none', color: '#0046be', fontWeight: '600', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <i className="fas fa-retweet"></i> Compare
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '28px', borderTop: '1px solid rgba(15, 85, 220, 0.1)', paddingTop: '32px', marginTop: '8px' }}>
+                    <button style={{ background: 'none', border: 'none', color: '#0f55dc', fontWeight: '400', fontSize: '12px', letterSpacing: '0.3px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'opacity 0.2s', padding: '0' }}>
+                      <i className="fas fa-retweet" style={{ fontSize: '13px' }}></i> Compare
                     </button>
-                    <button style={{ background: 'none', border: 'none', color: '#0046be', fontWeight: '600', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <i className="far fa-bookmark"></i> Save
+                    <button style={{ background: 'none', border: 'none', color: '#0f55dc', fontWeight: '400', fontSize: '12px', letterSpacing: '0.3px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'opacity 0.2s', padding: '0' }}>
+                      <i className="far fa-bookmark" style={{ fontSize: '13px' }}></i> Save
                     </button>
                   </div>
 
@@ -973,6 +977,32 @@ const ProductDetailPage: React.FC = () => {
               </div>
 
             </div>
+
+            {/* Related Products Section */}
+            {relatedProducts.length > 0 && (
+              <div style={{ marginTop: '80px', paddingTop: '60px', borderTop: '1px solid rgba(15, 85, 220, 0.1)' }}>
+                <div style={{ marginBottom: '40px' }}>
+                  <h2 style={{
+                    fontSize: '14px',
+                    fontWeight: '300',
+                    letterSpacing: '1.5px',
+                    color: '#0a0e27',
+                    marginBottom: '8px',
+                    textTransform: 'uppercase'
+                  }}>
+                    Related Products
+                  </h2>
+                  <div style={{ width: '60px', height: '1px', background: '#0f55dc', marginTop: '12px' }}></div>
+                </div>
+                <div className="row" style={{ marginLeft: '-15px', marginRight: '-15px' }}>
+                  {relatedProducts.map((relatedProduct) => (
+                    <div key={relatedProduct.Id} className="col-lg-3 col-md-4 col-sm-6" style={{ paddingLeft: '15px', paddingRight: '15px', marginBottom: '30px' }}>
+                      <ProductCard product={relatedProduct} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </main>
         <Footer />

@@ -305,7 +305,7 @@ const CheckoutPage: React.FC = () => {
       <Header />
       <main className="checkout-container">
         <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '140px 20px 80px' }}>
-          <h1 className="page-title">Checkout</h1>
+          <h1 className="page-title" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>Checkout</h1>
 
           <div className="row g-5">
             {/* Left Column: Address */}
@@ -418,89 +418,139 @@ const CheckoutPage: React.FC = () => {
 
       <style jsx>{`
                 .checkout-container {
-                    background-color: #f8fafc;
+                    background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
                     min-height: 100vh;
+                    position: relative;
+                }
+                .checkout-container::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: linear-gradient(90deg, transparent, rgba(15, 85, 220, 0.1), transparent);
                 }
                 .page-title {
-                    font-size: 32px;
-                    font-weight: 800;
-                    margin-bottom: 40px;
-                    color: #1e293b;
+                    font-size: 38px;
+                    font-weight: 300;
+                    letter-spacing: -0.5px;
+                    margin-bottom: 48px;
+                    color: #0a0e27;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
                 }
                 .empty-cart-state {
                     text-align: center;
-                    padding: 100px 20px;
+                    padding: 120px 20px;
                 }
                 
                 .checkout-section {
-                    background: #fff;
-                    border-radius: 16px;
-                    padding: 30px;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    background: #ffffff;
+                    border-radius: 0;
+                    padding: 42px 38px;
+                    box-shadow: 0 1px 3px rgba(15, 85, 220, 0.08);
+                    border: 1px solid rgba(15, 85, 220, 0.06);
+                    transition: box-shadow 0.3s ease;
+                }
+                .checkout-section:hover {
+                    box-shadow: 0 4px 12px rgba(15, 85, 220, 0.12);
                 }
                 .section-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 24px;
+                    margin-bottom: 32px;
+                    padding-bottom: 18px;
+                    border-bottom: 1px solid rgba(15, 85, 220, 0.1);
                 }
                 .section-header h3 {
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: #334155;
+                    font-size: 18px;
+                    font-weight: 400;
+                    letter-spacing: 0.3px;
+                    color: #0a0e27;
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 12px;
                     margin: 0;
+                    text-transform: uppercase;
+                    font-size: 13px;
+                    letter-spacing: 1.2px;
                 }
                 .add-new-link {
-                    color: #2563eb;
-                    font-weight: 600;
+                    color: #0f55dc;
+                    font-weight: 400;
                     text-decoration: none;
-                    font-size: 14px;
+                    font-size: 13px;
+                    letter-spacing: 0.2px;
+                    transition: opacity 0.2s;
+                }
+                .add-new-link:hover {
+                    opacity: 0.7;
                 }
 
                 .address-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 20px;
                 }
                 .address-radio-card {
                     display: flex;
                     align-items: flex-start;
-                    gap: 16px;
-                    padding: 20px;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 12px;
+                    gap: 20px;
+                    padding: 24px 28px;
+                    border: 1px solid rgba(15, 85, 220, 0.15);
+                    border-radius: 0;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    background: #ffffff;
+                    position: relative;
+                }
+                .address-radio-card::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 3px;
+                    background: #0f55dc;
+                    opacity: 0;
+                    transition: opacity 0.25s;
+                }
+                .address-radio-card:hover {
+                    border-color: rgba(15, 85, 220, 0.3);
+                    background: rgba(15, 85, 220, 0.02);
                 }
                 .address-radio-card.selected {
-                    border-color: #2563eb;
-                    background-color: #eff6ff;
+                    border-color: #0f55dc;
+                    background: rgba(15, 85, 220, 0.04);
+                }
+                .address-radio-card.selected::before {
+                    opacity: 1;
                 }
                 .radio-indicator {
-                    width: 20px;
-                    height: 20px;
+                    width: 18px;
+                    height: 18px;
                     border-radius: 50%;
-                    border: 2px solid #cbd5e1;
+                    border: 1.5px solid rgba(15, 85, 220, 0.4);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-top: 2px;
+                    margin-top: 3px;
                     flex-shrink: 0;
+                    transition: all 0.25s;
                 }
                 .address-radio-card.selected .radio-indicator {
-                    border-color: #2563eb;
+                    border-color: #0f55dc;
+                    border-width: 2px;
                 }
                 .dot {
-                    width: 10px;
-                    height: 10px;
+                    width: 8px;
+                    height: 8px;
                     border-radius: 50%;
-                    background: #2563eb;
+                    background: #0f55dc;
                     opacity: 0;
-                    transform: scale(0.5);
-                    transition: all 0.2s;
+                    transform: scale(0);
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .address-radio-card.selected .dot {
                     opacity: 1;
@@ -508,132 +558,198 @@ const CheckoutPage: React.FC = () => {
                 }
                 .addr-details p {
                     margin: 0;
-                    color: #64748b;
+                    color: #4a5568;
                     font-size: 14px;
-                    line-height: 1.5;
+                    line-height: 1.7;
+                    letter-spacing: 0.1px;
                 }
                 .badge-pill {
-                    background: #f1f5f9;
-                    font-size: 12px;
-                    padding: 2px 8px;
-                    border-radius: 4px;
-                    color: #475569;
+                    background: rgba(15, 85, 220, 0.08);
+                    font-size: 11px;
+                    padding: 4px 10px;
+                    border-radius: 0;
+                    color: #0f55dc;
+                    letter-spacing: 0.3px;
                 }
                 .badge-default {
-                    background: #dbeafe;
-                    color: #1e40af;
+                    background: #0f55dc;
+                    color: #ffffff;
                     font-size: 10px;
                     text-transform: uppercase;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-weight: 700;
+                    padding: 3px 8px;
+                    border-radius: 0;
+                    font-weight: 500;
+                    letter-spacing: 0.8px;
                 }
 
                 .payment-option {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 16px;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 8px;
-                    font-weight: 500;
+                    gap: 14px;
+                    padding: 20px 24px;
+                    border: 1px solid rgba(15, 85, 220, 0.15);
+                    border-radius: 0;
+                    font-weight: 400;
+                    letter-spacing: 0.2px;
+                    transition: all 0.25s;
+                    background: #ffffff;
+                }
+                .payment-option:hover {
+                    border-color: rgba(15, 85, 220, 0.3);
                 }
                 .payment-option.selected {
-                    border-color: #2563eb;
-                    background: #eff6ff;
-                    color: #1e3a8a;
+                    border-color: #0f55dc;
+                    background: rgba(15, 85, 220, 0.04);
+                    color: #0a0e27;
                 }
 
                 .order-summary-card {
-                    background: #fff;
-                    padding: 30px;
-                    border-radius: 16px;
-                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+                    background: #ffffff;
+                    padding: 38px 36px;
+                    border-radius: 0;
+                    box-shadow: 0 2px 8px rgba(15, 85, 220, 0.08);
+                    border: 1px solid rgba(15, 85, 220, 0.06);
                 }
                 .order-summary-card h3 {
-                    font-size: 20px;
-                    margin-bottom: 24px;
-                    font-weight: 700;
+                    font-size: 16px;
+                    margin-bottom: 32px;
+                    font-weight: 400;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    color: #0a0e27;
+                    padding-bottom: 18px;
+                    border-bottom: 1px solid rgba(15, 85, 220, 0.1);
                 }
                 .summary-items {
-                    max-height: 300px;
+                    max-height: 320px;
                     overflow-y: auto;
-                    margin-bottom: 20px;
+                    margin-bottom: 24px;
                 }
                 .summary-item {
                     display: flex;
                     justify-content: space-between;
-                    margin-bottom: 12px;
+                    margin-bottom: 16px;
                     font-size: 14px;
-                    color: #475569;
+                    color: #4a5568;
+                    letter-spacing: 0.1px;
+                    line-height: 1.6;
                 }
                 .summary-divider {
                     height: 1px;
-                    background: #e2e8f0;
-                    margin: 16px 0;
+                    background: rgba(15, 85, 220, 0.1);
+                    margin: 20px 0;
                 }
                 .summary-row {
                     display: flex;
                     justify-content: space-between;
-                    margin-bottom: 12px;
-                    color: #64748b;
+                    margin-bottom: 14px;
+                    color: #4a5568;
+                    font-size: 14px;
+                    letter-spacing: 0.1px;
                 }
                 .summary-row.total {
-                    color: #0f172a;
-                    font-weight: 700;
-                    font-size: 18px;
-                    margin-top: 8px;
+                    color: #0a0e27;
+                    font-weight: 400;
+                    font-size: 20px;
+                    margin-top: 12px;
+                    padding-top: 16px;
+                    border-top: 1px solid rgba(15, 85, 220, 0.15);
+                    letter-spacing: 0.2px;
                 }
-                .text-green { color: #16a34a; font-weight: 600; }
+                .text-green { 
+                    color: #0f55dc; 
+                    font-weight: 400; 
+                }
 
                 .place-order-btn {
                     width: 100%;
-                    background: #000;
-                    color: #fff;
-                    padding: 16px;
+                    background: #0f55dc;
+                    color: #ffffff;
+                    padding: 18px 24px;
                     border: none;
-                    border-radius: 50px;
-                    font-size: 16px;
-                    font-weight: 700;
-                    margin-top: 24px;
+                    border-radius: 0;
+                    font-size: 14px;
+                    font-weight: 400;
+                    letter-spacing: 1.2px;
+                    text-transform: uppercase;
+                    margin-top: 28px;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .place-order-btn::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                    transition: left 0.5s;
+                }
+                .place-order-btn:hover:not(:disabled)::before {
+                    left: 100%;
                 }
                 .place-order-btn:hover:not(:disabled) {
-                    background: #333;
-                    transform: translateY(-2px);
+                    background: #0d47b8;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(15, 85, 220, 0.3);
+                }
+                .place-order-btn:active:not(:disabled) {
+                    transform: translateY(0);
                 }
                 .place-order-btn:disabled {
-                    opacity: 0.7;
+                    opacity: 0.5;
                     cursor: not-allowed;
+                    background: #9ca3af;
                 }
                 .secure-text {
                     text-align: center;
-                    color: #94a3b8;
-                    font-size: 12px;
-                    margin-top: 16px;
+                    color: #9ca3af;
+                    font-size: 11px;
+                    margin-top: 20px;
                     margin-bottom: 0;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
                 }
                 .btn-primary {
-                    background: #2563eb;
+                    background: #0f55dc;
                     color: white;
-                    padding: 10px 20px;
-                    border-radius: 50px;
+                    padding: 12px 28px;
+                    border-radius: 0;
                     text-decoration: none;
                     margin-top: 20px;
                     display: inline-block;
+                    letter-spacing: 0.8px;
+                    text-transform: uppercase;
+                    font-size: 12px;
+                    font-weight: 400;
+                    transition: all 0.25s;
+                }
+                .btn-primary:hover {
+                    background: #0d47b8;
                 }
                 .btn-secondary {
-                    background: #f1f5f9;
-                    color: #475569;
-                    padding: 8px 16px;
-                    border-radius: 6px;
+                    background: #ffffff;
+                    color: #0f55dc;
+                    border: 1px solid #0f55dc;
+                    padding: 10px 20px;
+                    border-radius: 0;
                     text-decoration: none;
                     display: inline-block;
-                    font-size: 14px;
+                    font-size: 13px;
+                    font-weight: 400;
+                    letter-spacing: 0.3px;
+                    transition: all 0.25s;
+                }
+                .btn-secondary:hover {
+                    background: rgba(15, 85, 220, 0.05);
                 }
                 @media (max-width: 991px) {
                     .order-summary-card { margin-top: 30px; }
+                    .checkout-section { padding: 32px 24px; }
+                    .order-summary-card { padding: 32px 24px; }
                 }
             `}</style>
     </div>
