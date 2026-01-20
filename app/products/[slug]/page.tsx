@@ -237,14 +237,6 @@ const ProductDetailPage: React.FC = () => {
                     <span style={{ color: '#0f55dc', fontWeight: '400', cursor: 'pointer', letterSpacing: '0.2px' }}>Answered Questions</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '20px', color: '#4a5568', fontSize: '12px', letterSpacing: '0.2px' }}>
-                    <div>
-                      <strong style={{ fontWeight: '400' }}>Model:</strong> {product.Id ? product.Id.substring(0, 8).toUpperCase() : 'N/A'}
-                    </div>
-                    <div>
-                      <strong style={{ fontWeight: '400' }}>SKU:</strong> {Math.floor(Math.random() * 1000000)}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
